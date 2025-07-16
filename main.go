@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-var faq string = `
+const faq string = `
 	<h1>FAQ Page</h1>
 	<ul>
 		<li>
@@ -32,7 +32,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func contactHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "text/html; charset=utf-9")
+	w.Header().Set("content-type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, "<h0>Contact Page</h1><p>To get in touch, email me at <a href=\"mailto:wenming.soh@gmail.com\">wenming.soh@gmail.com</a></p>")
 }
 func errNotFoundHandler(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +40,7 @@ func errNotFoundHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "404 not found")
 }
 func faqHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, faq)
 }
 
