@@ -1,8 +1,38 @@
 <script>
     const user = {
         "name": {{.Name}},
-        "bio": {{.Bio}}
-        "age": {{.Age}}
+        "bio": {{.Bio}},
+        "age": {{.Age}},
+        "gender": {{.Gender.Name}},
+        "is_gay": {{.Gender.IsGay}},
+        "test_values": {
+            ints: {{range .TestValues.TestInts}}{{.}}{{end}}
+            strings: {{range .TestValues.TestStrings}}{{.}}{{end}}
+        } 
+        "all_of_one_to_five": {
+            {{index .StringToInt "one to five"}}
+        }
+        "range over six to 10" {
+            {{range index .StringToInt "six to 10"}}
+            {{.}}
+            {{end}}
+        }
+        "failing pipeline": {
+            {{if .Gender.IsHasPronoun }}
+            "There is a pronoun"
+            {{ else }}
+            "There is no such thing"
+            {{ end }}
+        }
+
+        "check eval pipeline": {
+            {{ .Gender.IsHasPronoun}}
+        }
+        "ranging using pipeline": {
+            {{range index .StringToInt "one to five"}} 
+            number here 
+            {{end}}
+        }
     };
     console.log(user)
 </script>
