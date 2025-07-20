@@ -1,59 +1,40 @@
 package main
 
 import (
-	"html/template"
-	"os"
+	"errors"
+	"fmt"
+	"log"
 )
 
-type User struct {
-	Name string
-	Bio  string
-	Age  int
-	Gender
-	TestValues
-	StringToInt
+func Connect() error {
+	//try to connect
+	// pretend we got an error
+	return errors.New("connection failed")
 }
 
-type Gender struct {
-	Name         string
-	IsGay        bool
-	IsHasPronoun bool
+func CreateUser() error {
+	err := Connect()
+	if err != nil {
+		return fmt.Errorf("create user function %w", err)
+	}
+	return nil
 }
 
-type TestValues struct {
-	TestInts    []int
-	TestStrings []string
+func CreateOrg() error {
+	err := CreateUser()
+	if err != nil {
+		return fmt.Errorf("create org function:  %w", err)
+	}
+	return nil
 }
-
-type StringToInt map[string][]int
 
 func main() {
-	t, err := template.ParseFiles("hello.gohtml")
+	err := CreateUser()
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
-
-	user := User{
-		Name: "Soh Wen Ming",
-		Bio:  `<script>alert("Haha, you have been h4x0r3d!");</script>`,
-		Age:  200,
-		Gender: Gender{
-			"male",
-			true,
-			false,
-		},
-		TestValues: TestValues{
-			[]int{1, 2, 3, 4, 5},
-			[]string{"one", "two", "three", "four", "five"},
-		},
-		StringToInt: StringToInt{
-			"one to five": []int{1, 2, 3, 4, 5},
-			"six to 10":   []int{6, 7, 8, 9, 10},
-		},
-	}
-
-	err = t.Execute(os.Stdout, user)
+	err = CreateOrg()
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }

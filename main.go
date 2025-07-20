@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,11 +16,8 @@ type templateDirAndPath struct {
 }
 
 func main() {
-	tplMap, err := views.LoadTemplates("./templates")
-	if err != nil {
-		log.Printf("Error loading template map, program terminated")
-		os.Exit(1)
-	}
+	tplMap := views.LoadTemplates("./templates")
+	//panic would occur if error occured during the loading of templates.
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

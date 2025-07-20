@@ -19,24 +19,6 @@ var tplStrings = []string{
 	"faq.gohtml",
 }
 
-func LoadTemplates(relPath string) (tplMap *TplMap, err error) {
-
-	workingMap := TplMap{}
-
-	for _, tplString := range tplStrings {
-		tplPath := filepath.Join(relPath, tplString)
-		tpl, err := template.ParseFiles(tplPath)
-		if err != nil {
-			return nil, err
-		}
-		workingTemplate := Template{
-			tpl,
-		}
-		workingMap[tplString] = workingTemplate
-	}
-	return &workingMap, nil
-}
-
 func (t *Template) Execute(w http.ResponseWriter, data interface{}) (err error) {
 	w.Header().Set("content-type", "text/html; charset=utf-8")
 	err = t.htmlTpl.Execute(w, data)
@@ -48,4 +30,29 @@ func (t *Template) Execute(w http.ResponseWriter, data interface{}) (err error) 
 		return
 	}
 	return nil
+}
+
+func LoadTemplates(relPath string) (tplMap *TplMap) {
+
+	return loadTemplates_internal(relPath)
+}
+
+func loadTemplates_internal(relPath string) *TplMap {
+	workingMap := TplMap{}
+	for _, tplString := range tplStrings {
+		tplPath := filepath.Join(relPath, tplString)
+		tpl := TemplateMust(template.ParseFiles(tplPath))
+		workingTemplate := Template{
+			tpl,
+		}
+		workingMap[tplString] = workingTemplate
+	}
+	return &workingMap
+}
+
+func TemplateMust(t *template.Template, err error) *template.Template {
+	if err != nil {
+		panic(err)
+	}
+	return t
 }
