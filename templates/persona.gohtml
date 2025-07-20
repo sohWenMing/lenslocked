@@ -1,0 +1,13 @@
+<h1>About</h1>
+<p>
+    <b>Name</b>: {{ .Name }}
+</p>
+<p>
+    <b>Age</b>: {{ .Age }}
+</p>
+<h2>Skills</h2>
+<ul>
+    {{ range .Skills }}
+    <li>{{.}}</li>
+    {{ end }}
+</ul>

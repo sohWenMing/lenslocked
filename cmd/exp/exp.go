@@ -3,38 +3,26 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 )
 
-func Connect() error {
-	//try to connect
-	// pretend we got an error
-	return errors.New("connection failed")
+type Booger struct {
+	personName string
 }
 
-func CreateUser() error {
-	err := Connect()
-	if err != nil {
-		return fmt.Errorf("create user function %w", err)
-	}
-	return nil
-}
-
-func CreateOrg() error {
-	err := CreateUser()
-	if err != nil {
-		return fmt.Errorf("create org function:  %w", err)
-	}
-	return nil
+func (b Booger) Error() string {
+	return fmt.Sprintf("this gross booger was from %s", b.personName)
 }
 
 func main() {
-	err := CreateUser()
-	if err != nil {
-		log.Println(err)
-	}
-	err = CreateOrg()
-	if err != nil {
-		log.Println(err)
+	boogerErr := &Booger{"Harper"}
+	err := fmt.Errorf("This is a test to wrap a booger %w", boogerErr)
+
+	fmt.Println("Is err boogerErr", errors.Is(err, boogerErr))
+
+	var boogerAs *Booger
+	if errors.As(err, &boogerAs) {
+		fmt.Println(fmt.Sprintf("The error occured because %s made the booger", boogerAs.personName))
+	} else {
+		fmt.Println("Its a mystery, this thing wasn't actually a booger error")
 	}
 }

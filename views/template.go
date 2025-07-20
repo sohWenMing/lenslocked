@@ -17,6 +17,7 @@ var tplStrings = []string{
 	"home.gohtml",
 	"contact.gohtml",
 	"faq.gohtml",
+	"persona.gohtml",
 }
 
 func (t *Template) Execute(w http.ResponseWriter, data interface{}) (err error) {
