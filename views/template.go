@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/sohWenMing/lenslocked/models"
 )
 
 type Template struct {
@@ -17,7 +19,7 @@ type TplMap map[string]Template
 var tplStrings = []string{
 	"home.gohtml",
 	"contact.gohtml",
-	// "faq.gohtml",
+	"faq.gohtml",
 	// "persona.gohtml",
 	"layout-parts.gohtml",
 }
@@ -25,6 +27,8 @@ var tplStrings = []string{
 var BaseTemplateToData = map[string]any{
 	"home.gohtml":    nil,
 	"contact.gohtml": nil,
+	"faq.gohtml":     models.QuestionsToAnswers,
+	// "person.gohtml":     models.U,
 }
 
 //go:embed templates/*

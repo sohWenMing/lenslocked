@@ -23,9 +23,9 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Get("/", controllers.HandlerExecuteTemplate(*template, "home.gohtml"))
 	r.Get("/contact", controllers.HandlerExecuteTemplate(*template, "contact.gohtml"))
-	// r.Get("/faq", controllers.GetHandlerForFaq(*tplMap, "faq.gohtml"))
+	r.Get("/faq", controllers.HandlerExecuteTemplate(*template, "faq.gohtml"))
 	// r.Get("/about/{persona}", controllers.GetHandlerforAbout(*tplMap, "persona.gohtml"))
-	// r.NotFound(controllers.ErrNotFoundHandler)
+	r.NotFound(controllers.ErrNotFoundHandler)
 	fmt.Println("Starting the server on :3000...")
 	http.ListenAndServe(":3000", r)
 }
