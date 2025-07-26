@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -30,5 +31,5 @@ func main() {
 	r.Get("/about/{persona}", controllers.HandlerForIndividualUser(*template))
 	r.NotFound(controllers.ErrNotFoundHandler)
 	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe(":3000", r)
+	log.Fatal(http.ListenAndServe(":3000", r))
 }

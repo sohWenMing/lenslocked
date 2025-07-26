@@ -22,8 +22,8 @@ var tplStrings = []string{
 	"contact.gohtml",
 	"faq.gohtml",
 	"persona.gohtml",
-	"layout-parts.gohtml",
 	"persona_multiple.gohtml",
+	"tailwind.gohtml",
 }
 
 var BaseTemplateToData = map[string]any{
