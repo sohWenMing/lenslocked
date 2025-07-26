@@ -16,16 +16,16 @@ type templateDirAndPath struct {
 }
 
 func main() {
-	tplMap := views.LoadTemplates("./templates")
+	template := views.LoadTemplates()
 	//panic would occur if error occured during the loading of templates.
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/", controllers.GetHandlerFromTplMap(*tplMap, "home.gohtml"))
-	r.Get("/contact", controllers.GetHandlerFromTplMap(*tplMap, "contact.gohtml"))
-	r.Get("/faq", controllers.GetHandlerFromTplMap(*tplMap, "faq.gohtml"))
-	r.Get("/about/{persona}", controllers.GetHandlerforAbout(*tplMap, "persona.gohtml"))
-	r.NotFound(controllers.ErrNotFoundHandler)
+	r.Get("/", controllers.HandlerExecuteTemplate(*template, "home.gohtml"))
+	r.Get("/contact", controllers.HandlerExecuteTemplate(*template, "contact.gohtml"))
+	// r.Get("/faq", controllers.GetHandlerForFaq(*tplMap, "faq.gohtml"))
+	// r.Get("/about/{persona}", controllers.GetHandlerforAbout(*tplMap, "persona.gohtml"))
+	// r.NotFound(controllers.ErrNotFoundHandler)
 	fmt.Println("Starting the server on :3000...")
 	http.ListenAndServe(":3000", r)
 }

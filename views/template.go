@@ -1,10 +1,11 @@
 package views
 
 import (
+	"embed"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
-	"path/filepath"
 )
 
 type Template struct {
@@ -16,13 +17,23 @@ type TplMap map[string]Template
 var tplStrings = []string{
 	"home.gohtml",
 	"contact.gohtml",
-	"faq.gohtml",
-	"persona.gohtml",
+	// "faq.gohtml",
+	// "persona.gohtml",
+	"layout-parts.gohtml",
 }
 
-func (t *Template) Execute(w http.ResponseWriter, data interface{}) (err error) {
+var BaseTemplateToData = map[string]any{
+	"home.gohtml":    nil,
+	"contact.gohtml": nil,
+}
+
+//go:embed templates/*
+var FS embed.FS
+
+func (t *Template) ExecTemplate(w http.ResponseWriter, baseTemplate string) (err error) {
+	data := BaseTemplateToData[baseTemplate]
 	w.Header().Set("content-type", "text/html; charset=utf-8")
-	err = t.htmlTpl.Execute(w, data)
+	err = t.htmlTpl.ExecuteTemplate(w, baseTemplate, data)
 	if err != nil {
 		log.Printf("parsing template: %v", err)
 		http.Error(w,
@@ -33,22 +44,13 @@ func (t *Template) Execute(w http.ResponseWriter, data interface{}) (err error) 
 	return nil
 }
 
-func LoadTemplates(relPath string) (tplMap *TplMap) {
+func LoadTemplates() (tpl *Template) {
+	tpl = &Template{}
 
-	return loadTemplates_internal(relPath)
-}
-
-func loadTemplates_internal(relPath string) *TplMap {
-	workingMap := TplMap{}
-	for _, tplString := range tplStrings {
-		tplPath := filepath.Join(relPath, tplString)
-		tpl := TemplateMust(template.ParseFiles(tplPath))
-		workingTemplate := Template{
-			tpl,
-		}
-		workingMap[tplString] = workingTemplate
-	}
-	return &workingMap
+	templateStrings := getTemplatePaths(tplStrings, "templates")
+	LoadedTemplate := TemplateMust(template.ParseFS(FS, templateStrings...))
+	tpl.htmlTpl = LoadedTemplate
+	return tpl
 }
 
 func TemplateMust(t *template.Template, err error) *template.Template {
@@ -56,4 +58,13 @@ func TemplateMust(t *template.Template, err error) *template.Template {
 		panic(err)
 	}
 	return t
+}
+
+func getTemplatePaths(tplStrings []string, baseFolderName string) []string {
+	fullPaths := make([]string, len(tplStrings))
+	for i, tplString := range tplStrings {
+		fullPath := fmt.Sprintf("%s/%s", baseFolderName, tplString)
+		fullPaths[i] = fullPath
+	}
+	return fullPaths
 }
