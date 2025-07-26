@@ -21,10 +21,11 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/", controllers.HandlerExecuteTemplate(*template, "home.gohtml"))
-	r.Get("/contact", controllers.HandlerExecuteTemplate(*template, "contact.gohtml"))
-	r.Get("/faq", controllers.HandlerExecuteTemplate(*template, "faq.gohtml"))
-	// r.Get("/about/{persona}", controllers.GetHandlerforAbout(*tplMap, "persona.gohtml"))
+	r.Get("/", controllers.HandlerExecuteTemplate(*template, "home.gohtml", nil))
+	r.Get("/contact", controllers.HandlerExecuteTemplate(*template, "contact.gohtml", nil))
+	r.Get("/faq", controllers.HandlerExecuteTemplate(*template, "faq.gohtml",
+		views.BaseTemplateToData["faq.gohtml"]))
+	r.Get("/about/{persona}", controllers.HandlerForIndividualUser(*template))
 	r.NotFound(controllers.ErrNotFoundHandler)
 	fmt.Println("Starting the server on :3000...")
 	http.ListenAndServe(":3000", r)

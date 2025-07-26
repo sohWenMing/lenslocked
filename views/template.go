@@ -2,6 +2,7 @@ package views
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -20,7 +21,7 @@ var tplStrings = []string{
 	"home.gohtml",
 	"contact.gohtml",
 	"faq.gohtml",
-	// "persona.gohtml",
+	"persona.gohtml",
 	"layout-parts.gohtml",
 }
 
@@ -28,15 +29,20 @@ var BaseTemplateToData = map[string]any{
 	"home.gohtml":    nil,
 	"contact.gohtml": nil,
 	"faq.gohtml":     models.QuestionsToAnswers,
-	// "person.gohtml":     models.U,
 }
 
 //go:embed templates/*
 var FS embed.FS
 
-func (t *Template) ExecTemplate(w http.ResponseWriter, baseTemplate string) (err error) {
-	data := BaseTemplateToData[baseTemplate]
-	w.Header().Set("content-type", "text/html; charset=utf-8")
+func GetDataForIndividualPersona(personaString string) (user models.User, err error) {
+	user, ok := models.UserMap[personaString]
+	if !ok {
+		return models.User{}, errors.New("user could not be found")
+	}
+	return user, nil
+}
+
+func (t *Template) ExecTemplate(w http.ResponseWriter, baseTemplate string, data any) (err error) {
 	err = t.htmlTpl.ExecuteTemplate(w, baseTemplate, data)
 	if err != nil {
 		log.Printf("parsing template: %v", err)
