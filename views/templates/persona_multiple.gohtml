@@ -1,0 +1,16 @@
+
+{{define "user-listing"}}
+    <li>
+    {{template "persona" .}}
+    </li>
+{{ end }}
+
+
+
+<h1>Users</h1>
+<ul>
+{{ range . }}
+{{template "user-listing" .}}
+{{ end }}
+</ul>
+

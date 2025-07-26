@@ -23,12 +23,14 @@ var tplStrings = []string{
 	"faq.gohtml",
 	"persona.gohtml",
 	"layout-parts.gohtml",
+	"persona_multiple.gohtml",
 }
 
 var BaseTemplateToData = map[string]any{
-	"home.gohtml":    nil,
-	"contact.gohtml": nil,
-	"faq.gohtml":     models.QuestionsToAnswers,
+	"home.gohtml":             nil,
+	"contact.gohtml":          nil,
+	"faq.gohtml":              models.QuestionsToAnswers,
+	"persona_multiple.gohtml": models.GetAllUsers(),
 }
 
 //go:embed templates/*

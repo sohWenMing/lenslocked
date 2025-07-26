@@ -25,6 +25,8 @@ func main() {
 	r.Get("/contact", controllers.HandlerExecuteTemplate(*template, "contact.gohtml", nil))
 	r.Get("/faq", controllers.HandlerExecuteTemplate(*template, "faq.gohtml",
 		views.BaseTemplateToData["faq.gohtml"]))
+	r.Get("/about", controllers.HandlerExecuteTemplate(*template, "persona_multiple.gohtml",
+		views.BaseTemplateToData["persona_multiple.gohtml"]))
 	r.Get("/about/{persona}", controllers.HandlerForIndividualUser(*template))
 	r.NotFound(controllers.ErrNotFoundHandler)
 	fmt.Println("Starting the server on :3000...")

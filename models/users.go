@@ -14,3 +14,11 @@ var UserMap = map[string]User{
 		"Sarah", 38, []string{"pilates", "mothering", "gyrotonic"},
 	},
 }
+
+func GetAllUsers() []User {
+	returnedUsers := []User{}
+	for _, user := range UserMap {
+		returnedUsers = append(returnedUsers, user)
+	}
+	return returnedUsers
+}
