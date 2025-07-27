@@ -50,3 +50,11 @@ func ErrNotFoundHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "404 not found")
 	return
 }
+
+func TestHandler(testText string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, testText)
+		return
+	}
+}

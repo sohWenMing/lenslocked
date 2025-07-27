@@ -1,0 +1,24 @@
+{{template "header" .}}
+<div class="py-10 flex justify-center">
+    <div class="px-8 py-8 bg-white rounded shadow">
+        <h1 class="py-4 text-center text-3xl font-bold text-gray-900">
+            Start sharing your photos today!
+        </h1>
+        <form action="/signup" method="post">
+            {{ template "input" .EmailInputAttribs}}
+            {{ template "input" .PasswordInputAttribs}}
+            <div class="mt-1">
+                <button class="text-white w-full px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded" type="submit">Sign up!</button>
+            </div>
+            <div class="w-full flex justify-between items-center">
+                <p class="my-1">
+                    Already have an account? <a class="underline ml-1" href="/signin">Sign In</a> 
+                </p>
+                <p class="text-xs text-gray-500">
+                    <a class="underline" href="/forgot_passwords">Forgot password?</a> 
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+{{template "footer" .}}

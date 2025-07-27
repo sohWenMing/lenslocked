@@ -24,6 +24,8 @@ var tplStrings = []string{
 	"persona.gohtml",
 	"persona_multiple.gohtml",
 	"tailwind.gohtml",
+	"tailwind_widgets.gohtml",
+	"signup.gohtml",
 }
 
 var BaseTemplateToData = map[string]any{
@@ -31,6 +33,7 @@ var BaseTemplateToData = map[string]any{
 	"contact.gohtml":          nil,
 	"faq.gohtml":              models.QuestionsToAnswers,
 	"persona_multiple.gohtml": models.GetAllUsers(),
+	"signup.gohtml":           SignUpFormData,
 }
 
 //go:embed templates/*
