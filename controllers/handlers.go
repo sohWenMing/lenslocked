@@ -10,11 +10,10 @@ import (
 	"github.com/sohWenMing/lenslocked/views"
 )
 
-func HandlerExecuteTemplate(template views.Template, fileName string, data any) http.HandlerFunc {
+func HandlerExecuteTemplate(template ExcecutorTemplate, fileName string, data any) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "text/html")
 		template.ExecTemplate(w, fileName, data)
-		return
 	}
 }
 
@@ -33,7 +32,6 @@ func HandlerForIndividualUser(template views.Template) http.HandlerFunc {
 			return
 		}
 		template.ExecTemplate(w, "persona.gohtml", user)
-		return
 	}
 }
 
@@ -48,13 +46,11 @@ func GetUrlParam(r *http.Request, param string) (returnedString string, err erro
 func ErrNotFoundHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	fmt.Fprintf(w, "404 not found")
-	return
 }
 
 func TestHandler(testText string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, testText)
-		return
 	}
 }

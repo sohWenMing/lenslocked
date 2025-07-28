@@ -47,8 +47,8 @@ func GetDataForIndividualPersona(personaString string) (user models.User, err er
 	return user, nil
 }
 
-func (t *Template) ExecTemplate(w http.ResponseWriter, baseTemplate string, data any) (err error) {
-	err = t.htmlTpl.ExecuteTemplate(w, baseTemplate, data)
+func (t *Template) ExecTemplate(w http.ResponseWriter, baseTemplate string, data any) {
+	err := t.htmlTpl.ExecuteTemplate(w, baseTemplate, data)
 	if err != nil {
 		log.Printf("parsing template: %v", err)
 		http.Error(w,
@@ -56,7 +56,7 @@ func (t *Template) ExecTemplate(w http.ResponseWriter, baseTemplate string, data
 			http.StatusInternalServerError)
 		return
 	}
-	return nil
+	return
 }
 
 func LoadTemplates() (tpl *Template) {
