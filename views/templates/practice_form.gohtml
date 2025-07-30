@@ -1,0 +1,10 @@
+{{template "header" .}}
+<div class="flex justify-center">
+    <form action="/practice_form" method="post">
+    {{template "input" .Input1Attribs }}
+    {{template "input" .Input2Attribs }}
+    {{template "checkbox" .CheckBoxAttribs }}
+    {{template "submit-button" .ButtonAttribs }}
+    </form>
+</div>
+{{ template "footer" .}}

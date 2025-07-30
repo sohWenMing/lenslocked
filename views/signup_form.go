@@ -1,20 +1,10 @@
 package views
 
-type inputHTMLAttribs struct {
-	Name         string
-	Id           string
-	InputType    string
-	PlaceHolder  string
-	AutoComplete string
-	LabelText    string
-	IsRequired   bool
-}
-
-type SignUpFormAttibs struct {
+type SignUpForm struct {
 	EmailInputAttribs, PasswordInputAttribs inputHTMLAttribs
 }
 
-var SignUpFormData = SignUpFormAttibs{
+var SignUpFormData = SignUpForm{
 	EmailInputAttribs: inputHTMLAttribs{
 		"email",
 		"email",
@@ -23,6 +13,8 @@ var SignUpFormData = SignUpFormAttibs{
 		"email",
 		"Email",
 		true,
+		"",
+		// Value can be set by a method
 	},
 	PasswordInputAttribs: inputHTMLAttribs{
 		"password",
@@ -32,5 +24,13 @@ var SignUpFormData = SignUpFormAttibs{
 		"",
 		"Password",
 		true,
+		"",
 	},
+}
+
+func (s *SignUpForm) SetEmailValue(input string) {
+	s.EmailInputAttribs.Value = input
+}
+func (s *SignUpForm) SetPasswordValue(input string) {
+	s.PasswordInputAttribs.Value = input
 }

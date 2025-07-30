@@ -23,9 +23,9 @@ var tplStrings = []string{
 	"faq.gohtml",
 	"persona.gohtml",
 	"persona_multiple.gohtml",
-	"tailwind.gohtml",
 	"tailwind_widgets.gohtml",
 	"signup.gohtml",
+	"practice_form.gohtml",
 }
 
 var BaseTemplateToData = map[string]any{
@@ -34,6 +34,7 @@ var BaseTemplateToData = map[string]any{
 	"faq.gohtml":              models.QuestionsToAnswers,
 	"persona_multiple.gohtml": models.GetAllUsers(),
 	"signup.gohtml":           SignUpFormData,
+	"practice_form.gohtml":    nil,
 }
 
 //go:embed templates/*
@@ -56,7 +57,6 @@ func (t *Template) ExecTemplate(w http.ResponseWriter, baseTemplate string, data
 			http.StatusInternalServerError)
 		return
 	}
-	return
 }
 
 func LoadTemplates() (tpl *Template) {

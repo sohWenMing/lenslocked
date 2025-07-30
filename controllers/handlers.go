@@ -10,7 +10,7 @@ import (
 	"github.com/sohWenMing/lenslocked/views"
 )
 
-func HandlerExecuteTemplate(template ExcecutorTemplate, fileName string, data any) http.HandlerFunc {
+func HandlerExecuteTemplate(template ExecutorTemplate, fileName string, data any) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "text/html")
 		template.ExecTemplate(w, fileName, data)
