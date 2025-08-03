@@ -4,7 +4,7 @@ type SignUpForm struct {
 	EmailInputAttribs, PasswordInputAttribs inputHTMLAttribs
 }
 
-var SignUpFormData = SignUpForm{
+var SignUpSignInFormData = SignUpForm{
 	EmailInputAttribs: inputHTMLAttribs{
 		"email",
 		"email",

@@ -1,0 +1,15 @@
+{{template "header" .}}
+<div class="py-10 flex justify-center">
+    <div class="px-8 py-8 bg-white rounded shadow">
+        <h1 class="py-4 text-center text-3xl font-bold text-gray-900">
+        Sign In
+        </h1>
+        <form action="/signup" method="post">
+            {{ template "input" .EmailInputAttribs}}
+            {{ template "input" .PasswordInputAttribs}}
+            <div class="mt-1">
+                <button class="text-white w-full px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded" type="submit">Sign In!</button>
+        </form>
+    </div>
+</div>
+{{template "footer" .}}

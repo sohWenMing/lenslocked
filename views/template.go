@@ -23,6 +23,7 @@ var tplStrings = []string{
 	"persona.gohtml",
 	"tailwind_widgets.gohtml",
 	"signup.gohtml",
+	"signin.gohtml",
 	"practice_form.gohtml",
 }
 
@@ -30,7 +31,8 @@ var BaseTemplateToData = map[string]any{
 	"home.gohtml":          nil,
 	"contact.gohtml":       nil,
 	"faq.gohtml":           models.QuestionsToAnswers,
-	"signup.gohtml":        SignUpFormData,
+	"signup.gohtml":        SignUpSignInFormData,
+	"signin.gohtml":        SignUpSignInFormData,
 	"practice_form.gohtml": nil,
 }
 

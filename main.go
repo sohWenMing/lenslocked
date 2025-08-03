@@ -23,8 +23,7 @@ func main() {
 	defer dbc.DB.Close()
 
 	template := views.LoadTemplates()
-	usersController := controllers.InitSignupFormController(template)
-	practiceFormController := controllers.InitPracticeFormController(template)
+	formNameToLoader := controllers.InitFormNameToLoader(template)
 	//panic would occur if error occured during the loading of templates.
 
 	r := chi.NewRouter()
@@ -32,19 +31,17 @@ func main() {
 
 	// ##### Get Method Handlers #####
 	r.Get("/contact", controllers.HandlerExecuteTemplate(template, "contact.gohtml", nil))
-	r.Get("/signup", usersController.Load)
-	r.Get("/practice_form", practiceFormController.Load)
+	r.Get("/signup", formNameToLoader["signup_form"].Load)
+	r.Get("/signin", formNameToLoader["signin_form"].Load)
 	r.Get("/faq", controllers.HandlerExecuteTemplate(template, "faq.gohtml",
 		views.BaseTemplateToData["faq.gohtml"]))
 	r.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml",
 		views.BaseTemplateToData["persona_multiple.gohtml"]))
-	r.Get("/signin", controllers.TestHandler(("To do - sign in page")))
 	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))
 
 	r.Get("/", controllers.HandlerExecuteTemplate(template, "home.gohtml", nil))
 	// ##### POST Method Handlers #####
 	r.Post("/signup", controllers.HandleSignupForm(dbc))
-	r.Post("/practice_form", controllers.HandlePracticeForm)
 
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)

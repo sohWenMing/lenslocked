@@ -8,6 +8,28 @@ import (
 	"github.com/sohWenMing/lenslocked/views"
 )
 
+/*
+What am i trying to achieve
+I want to unify all the different forms, under a type , so that each of them can load. The Loader should be a http.Handler
+the thing to take into account is that each loader, will have a different set of things that it needs to do
+
+so ....
+if we take the Load method, that will be the unifier, and then from there we can deal with each thing that we need
+*/
+
+type FormLoader interface {
+	Load(w http.ResponseWriter, r *http.Request)
+}
+
+type FormNameToLoader map[string]FormLoader
+
+func InitFormNameToLoader(template ExecutorTemplate) FormNameToLoader {
+	return FormNameToLoader{
+		"signup_form": InitSignupFormController(template),
+		"signin_form": InitSignInFormController(template),
+	}
+}
+
 type FormController struct {
 	Templates ExecutorTemplate
 }
@@ -18,13 +40,32 @@ type SignupFormController struct {
 }
 
 func (s *SignupFormController) Load(w http.ResponseWriter, r *http.Request) {
-	initFormData := views.SignUpFormData
+	initFormData := views.SignUpSignInFormData
 	initFormData.SetEmailValue(r.FormValue("email"))
 	s.FormController.Templates.ExecTemplate(w, "signup.gohtml", initFormData)
 }
 
 func InitSignupFormController(template ExecutorTemplate) *SignupFormController {
 	return &SignupFormController{
+		FormController: FormController{
+			template,
+		},
+	}
+}
+
+// ##### SignIn Form Controller Definition #####
+type SignInFormController struct {
+	FormController FormController
+}
+
+func (s *SignInFormController) Load(w http.ResponseWriter, r *http.Request) {
+	initFormData := views.SignUpSignInFormData
+	initFormData.SetEmailValue(r.FormValue("email"))
+	s.FormController.Templates.ExecTemplate(w, "signin.gohtml", initFormData)
+}
+
+func InitSignInFormController(template ExecutorTemplate) *SignInFormController {
+	return &SignInFormController{
 		FormController: FormController{
 			template,
 		},
