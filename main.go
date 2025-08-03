@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sohWenMing/lenslocked/controllers"
+	"github.com/sohWenMing/lenslocked/models"
 	"github.com/sohWenMing/lenslocked/views"
 )
 
@@ -17,6 +18,10 @@ type templateDirAndPath struct {
 }
 
 func main() {
+
+	dbc := models.InitDBConnections()
+	defer dbc.DB.Close()
+
 	template := views.LoadTemplates()
 	usersController := controllers.InitSignupFormController(template)
 	practiceFormController := controllers.InitPracticeFormController(template)
@@ -33,13 +38,12 @@ func main() {
 		views.BaseTemplateToData["faq.gohtml"]))
 	r.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml",
 		views.BaseTemplateToData["persona_multiple.gohtml"]))
-	r.Get("/about/{persona}", controllers.HandlerForIndividualUser(*template))
 	r.Get("/signin", controllers.TestHandler(("To do - sign in page")))
 	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))
 
 	r.Get("/", controllers.HandlerExecuteTemplate(template, "home.gohtml", nil))
 	// ##### POST Method Handlers #####
-	r.Post("/signup", controllers.HandleSignupForm)
+	r.Post("/signup", controllers.HandleSignupForm(dbc))
 	r.Post("/practice_form", controllers.HandlePracticeForm)
 
 	// ##### Not Found Handler #####

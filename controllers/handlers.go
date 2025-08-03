@@ -6,32 +6,12 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-
-	"github.com/sohWenMing/lenslocked/views"
 )
 
 func HandlerExecuteTemplate(template ExecutorTemplate, fileName string, data any) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "text/html")
 		template.ExecTemplate(w, fileName, data)
-	}
-}
-
-func HandlerForIndividualUser(template views.Template) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		param, err := GetUrlParam(r, "persona")
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprintf(w, "404 not found")
-			return
-		}
-		user, err := views.GetDataForIndividualPersona(param)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprintf(w, "404 not found")
-			return
-		}
-		template.ExecTemplate(w, "persona.gohtml", user)
 	}
 }
 

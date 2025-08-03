@@ -41,18 +41,71 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
-		id SERIAL PRIMARY KEY,
-		name TEXT,
-		email TEXT NOT NULL
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS user_region (
+			id SERIAL PRIMARY KEY,
+			region TEXT,
+			user_id INT REFERENCES users(id)
 		);
-		CREATE TABLE IF NOT EXISTS orders (
-		id SERIAL PRIMARY KEY,
-		user_id INT NOT NULL,
-		amount INT,
-		description TEXT
-		);`)
+	`)
+
+	type UserIdToName struct {
+		UserId int
+		Name   string
+	}
+	var userIdToName = UserIdToName{}
+	emailTest := "wenming.soh@gmail.com"
+
+	userIdToNameRow := db.QueryRow(`
+		SELECT id, name
+		  FROM users
+		  WHERE email = $1
+		  LIMIT 1
+	`, emailTest)
+	err = userIdToNameRow.Scan(&userIdToName.UserId, &userIdToName.Name)
+	if err != nil && err == sql.ErrNoRows {
+		fmt.Println("no rows were returned", err)
+	}
+	if err != nil {
+		panic(err)
+	}
+	region := "test_region_somalia"
+
+	row := db.QueryRow(`
+		INSERT INTO user_region(region, user_id)
+		VALUES ($1, $2) returning id, region, user_id;
+	`, region, userIdToName.UserId)
+
+	type UserRegionRow struct {
+		ID     int
+		Region string
+		UserId int
+	}
+
+	userRegionRow := UserRegionRow{}
+
+	err = row.Scan(&userRegionRow.ID, &userRegionRow.Region, &userRegionRow.UserId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("no rows were returned: ", err)
+		} else {
+			panic(err)
+		}
+	}
+
+	fmt.Println("result from userRegionRow: ", userRegionRow)
+
+	// _, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
+	// 	id SERIAL PRIMARY KEY,
+	// 	name TEXT,
+	// 	email TEXT NOT NULL
+	// 	);
+	// 	CREATE TABLE IF NOT EXISTS orders (
+	// 	id SERIAL PRIMARY KEY,
+	// 	user_id INT NOT NULL,
+	// 	amount INT,
+	// 	description TEXT
+	// 	);`)
 	if err != nil {
 		panic(err)
 	}
@@ -91,52 +144,52 @@ func main() {
 	// 	}
 	// 	fmt.Println("returned Id: ", returnedId)
 	// }
-	userId := 1
-	type Order struct {
-		ID          int
-		UserID      int
-		Amount      int
-		Description string
-	}
+	// userId := 1
+	// type Order struct {
+	// 	ID          int
+	// 	UserID      int
+	// 	Amount      int
+	// 	Description string
+	// }
 
 	// the definition of the struct that we want to fill out
-	orders := []Order{}
+	// orders := []Order{}
 	// presetting the slice or orders, that will hold the results
 
-	rows, err := db.Query(
-		`SELECT id, amount, description from orders 
-		WHERE user_id = $1`, userId,
-	)
-	for rows.Next() {
-		/*
-			rows .Next() will return true if there is still a next row
-			to read, and will return false if there is no more row to read
+	// rows, err := db.Query(
+	// 	`SELECT id, amount, description from orders
+	// 	WHERE user_id = $1`, userId,
+	// )
+	// for rows.Next() {
+	// 	/*
+	// 		rows .Next() will return true if there is still a next row
+	// 		to read, and will return false if there is no more row to read
 
-			For this reason, next has to be called for every Scan() function
-			that is called on rows - even before the first
-		*/
-		order := Order{
-			UserID: userId,
-		}
-		// pre population the UserId, because we're hard coding it here and not
-		// getting it from the table
+	// 		For this reason, next has to be called for every Scan() function
+	// 		that is called on rows - even before the first
+	// 	*/
+	// 	order := Order{
+	// 		UserID: userId,
+	// 	}
+	// 	// pre population the UserId, because we're hard coding it here and not
+	// 	// getting it from the table
 
-		err = rows.Scan(&order.ID, &order.Amount, &order.Description)
-		if err != nil {
-			panic(err)
-		}
-		// for each row, first check if there is an error
-		// if no error, then each column will end up being populated to the
-		// corresponding pointer to the field within the struct
-		orders = append(orders, order)
-	}
-	err = rows.Err()
-	// find out if there was any error during interation
-	if err != nil {
-		panic(err)
-	}
-	for _, order := range orders {
-		fmt.Println("order result: ", order)
-	}
+	// 	err = rows.Scan(&order.ID, &order.Amount, &order.Description)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// for each row, first check if there is an error
+	// if no error, then each column will end up being populated to the
+	// corresponding pointer to the field within the struct
+	// 	orders = append(orders, order)
+	// }
+	// err = rows.Err()
+	// // find out if there was any error during interation
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// for _, order := range orders {
+	// 	fmt.Println("order result: ", order)
+	// }
 
 }
