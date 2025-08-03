@@ -24,19 +24,20 @@ func TestMain(m *testing.M) {
 
 func TestLoginUser(t *testing.T) {
 	type test struct {
-		testName      string
-		email         string
-		password      string
-		expected      LoggedInUserInfo
-		expectedErr   error
-		isErrExpected bool
+		testName       string
+		userToPassword UserToPlainTextPassword
+		expected       LoggedInUserInfo
+		expectedErr    error
+		isErrExpected  bool
 	}
 
 	tests := []test{
 		{
 			"first test, to get valid user",
-			"wenming.soh@gmail.com",
-			"Holoq123holoq123",
+			UserToPlainTextPassword{
+				"wenming.soh@gmail.com",
+				"Holoq123holoq123",
+			},
 			LoggedInUserInfo{
 				1, "wenming.soh@gmail.com",
 			},
@@ -45,8 +46,10 @@ func TestLoginUser(t *testing.T) {
 		},
 		{
 			"second test, should fail password",
-			"wenming.soh@gmail.com",
-			"failing_pw",
+			UserToPlainTextPassword{
+				"wenming.soh@gmail.com",
+				"failing_pw",
+			},
 			LoggedInUserInfo{},
 			bcrypt.ErrMismatchedHashAndPassword,
 			true,
@@ -55,7 +58,7 @@ func TestLoginUser(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			user, err := userService.LoginUser(test.email, test.password)
+			user, err := userService.LoginUser(test.userToPassword)
 			switch test.isErrExpected {
 			case true:
 				if err == nil {

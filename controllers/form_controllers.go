@@ -44,6 +44,27 @@ func InitSignupFormController(template ExecutorTemplate) *SignupFormController {
 	}
 }
 
+func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		emailAddress, password, err := parseEmailAndPasswordFromForm(r)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
+			return
+		}
+		newUserToCreate := models.UserToPlainTextPassword{
+			Email:             emailAddress,
+			PlainTextPassword: password,
+		}
+		user, err := dbc.UserService.CreateUser(newUserToCreate)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "<p>user with email %s has been successfully created", user.Email)
+	}
+}
+
 // ##### SignIn Form Controller Definition #####
 type SignInFormController struct {
 	FormController FormController
@@ -63,23 +84,32 @@ func InitSignInFormController(template ExecutorTemplate) *SignInFormController {
 	}
 }
 
-func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+func HandlerSigninForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
+		emailAddress, password, err := parseEmailAndPasswordFromForm(r)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
 			return
 		}
-		emailAddress := r.PostForm.Get("email")
-		password := r.PostForm.Get("password")
-		user, err := dbc.UserService.CreateUser(emailAddress, password)
+		userToPassword := models.UserToPlainTextPassword{
+			Email:             emailAddress,
+			PlainTextPassword: password}
+		loggedInUserInfo, err := dbc.UserService.LoginUser(userToPassword)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "<p>user with email %s has been successfully created", user.Email)
-		fmt.Fprintf(w, "<p>email address: %s</p>", emailAddress)
-		fmt.Fprintf(w, "<p>password: %s</p>", password)
+		fmt.Fprintf(w, "<p>user with email %s has been successfully logged in", loggedInUserInfo.Email)
 	}
+}
+
+func parseEmailAndPasswordFromForm(r *http.Request) (email, password string, err error) {
+	err = r.ParseForm()
+	if err != nil {
+		return email, password, err
+	}
+	email = r.PostForm.Get("email")
+	password = r.PostForm.Get("password")
+	return email, password, nil
 }

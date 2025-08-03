@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 	"strings"
 
@@ -8,7 +9,8 @@ import (
 )
 
 const (
-	genericErrorMsg string = "A problem occured during the operation. Please try again later."
+	genericErrorMsg    string = "A problem occured during the operation. Please try again later."
+	emailTakenErrorMsg string = "email has already been used. Please try using another."
 )
 
 type HandledError struct {
@@ -20,21 +22,31 @@ func (g *HandledError) Error() string {
 	return g.errMsg
 }
 
-var (
-	ErrEmailTaken = errors.New("email has already been used. Please try using another.")
-)
+func MapHandledError(err error, errMsg string) *HandledError {
+	return &HandledError{
+		err, errMsg,
+	}
+}
+func MapHandledGenericError(err error) *HandledError {
+	return &HandledError{
+		err, genericErrorMsg,
+	}
+}
 
 func HandlePgError(err error) error {
+	if errors.Is(err, sql.ErrNoRows) {
+		return MapHandledError(err, "No user could be found with that email address")
+	}
 	if strings.Contains(err.Error(), `ERROR: duplicate key value violates unique constraint "users_email_key" (SQLSTATE 23505)`) {
-		return ErrEmailTaken
+		return MapHandledError(err, emailTakenErrorMsg)
 	} else {
-		return &HandledError{err, genericErrorMsg}
+		return MapHandledGenericError(err)
 	}
 }
 
 func HandlerBcryptErr(err error) error {
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return &HandledError{err, "email and password combination do not match"}
+		return MapHandledError(err, "email and password combination do not match")
 	}
-	return err
+	return MapHandledGenericError(err)
 }

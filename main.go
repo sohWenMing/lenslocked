@@ -42,6 +42,7 @@ func main() {
 	r.Get("/", controllers.HandlerExecuteTemplate(template, "home.gohtml", nil))
 	// ##### POST Method Handlers #####
 	r.Post("/signup", controllers.HandleSignupForm(dbc))
+	r.Post("/signin", controllers.HandlerSigninForm(dbc))
 
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)
