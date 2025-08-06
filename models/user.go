@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -40,7 +41,11 @@ func (us *UserService) CreateUserTableIfNotExist() {
 }
 
 func (us *UserService) CreateUser(newUserToCreate UserToPlainTextPassword) (*User, error) {
-	hashBytes, err := bcrypt.GenerateFromPassword([]byte(newUserToCreate.PlainTextPassword), bcrypt.DefaultCost)
+	preppedInfo := prepUserToPlainTextPassword(newUserToCreate)
+	hashBytes, err := bcrypt.GenerateFromPassword(
+		[]byte(preppedInfo.PlainTextPassword),
+		bcrypt.DefaultCost,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +54,7 @@ func (us *UserService) CreateUser(newUserToCreate UserToPlainTextPassword) (*Use
 		INSERT INTO users (email, password_hash)
 		VALUES ($1, $2)
 		RETURNING id, email, password_hash;
-	`, newUserToCreate.Email, hash)
+	`, preppedInfo.Email, hash)
 	returnedUser := User{}
 	err = row.Scan(&returnedUser.ID, &returnedUser.Email, &returnedUser.PasswordHash)
 	if err != nil {
@@ -59,12 +64,12 @@ func (us *UserService) CreateUser(newUserToCreate UserToPlainTextPassword) (*Use
 }
 
 func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (loggedInUserInfo LoggedInUserInfo, err error) {
-
+	preppedInfo := prepUserToPlainTextPassword(userToPassword)
 	row := us.db.QueryRow(`
 		SELECT id, email, password_hash 
 		FROM  users
 		WHERE email=($1);
-	`, userToPassword.Email)
+	`, preppedInfo.Email)
 	var returnedUser User
 	err = row.Scan(&returnedUser.ID, &returnedUser.Email, &returnedUser.PasswordHash)
 	if err != nil {
@@ -77,4 +82,10 @@ func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (logged
 	loggedInUserInfo.ID = returnedUser.ID
 	loggedInUserInfo.Email = returnedUser.Email
 	return loggedInUserInfo, nil
+}
+
+// ##### helpers #####
+func prepUserToPlainTextPassword(u UserToPlainTextPassword) UserToPlainTextPassword {
+	u.Email = strings.ToLower(u.Email)
+	return u
 }

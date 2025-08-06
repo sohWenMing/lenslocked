@@ -22,37 +22,39 @@ func (p pgConfig) String() string {
 	)
 }
 
-var config = pgConfig{
-	"localhost",
-	"5432",
-	"baloo",
-	"junglebook",
-	"lenslocked",
-	"disable",
+func defaultConfig() pgConfig {
+	return pgConfig{
+		"localhost",
+		"5432",
+		"baloo",
+		"junglebook",
+		"lenslocked",
+		"disable",
+	}
 }
 
-func InitDBConnections() *DBConnections {
+func InitDBConnections() (dbc *DBConnections, err error) {
 	db, err := sql.Open(
 		"pgx",
-		config.String(),
+		defaultConfig().String(),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	err = db.Ping()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	userServicePtr := &UserService{
 		db,
 	}
 	fmt.Println("DB Connection has been initialised")
-	dbc := &DBConnections{
+	dbc = &DBConnections{
 		userServicePtr,
 		db,
 	}
 	dbc.InitCreatedTablesIfNotExist()
-	return dbc
+	return dbc, nil
 }
 
 func (dbc *DBConnections) InitCreatedTablesIfNotExist() {

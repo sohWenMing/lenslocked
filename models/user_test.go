@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -13,12 +14,19 @@ var dbc *DBConnections
 var userService UserService
 
 func TestMain(m *testing.M) {
-	dbc = InitDBConnections()
+	databaseConnection, err := InitDBConnections()
+	if err != nil {
+		fmt.Println("error occured during initialisation of db connection during test")
+		os.Exit(1)
+	}
+	dbc = databaseConnection
 	userService = UserService{
 		dbc.DB,
 	}
-	defer dbc.DB.Close()
 	code := m.Run()
+	if err := dbc.DB.Close(); err != nil {
+		fmt.Println("error closing db: ", err)
+	}
 	os.Exit(code)
 }
 

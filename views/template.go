@@ -25,6 +25,7 @@ var tplStrings = []string{
 	"signup.gohtml",
 	"signin.gohtml",
 	"practice_form.gohtml",
+	"test_cookie.gohtml",
 }
 
 var BaseTemplateToData = map[string]any{
@@ -34,6 +35,7 @@ var BaseTemplateToData = map[string]any{
 	"signup.gohtml":        SignUpSignInFormData,
 	"signin.gohtml":        SignUpSignInFormData,
 	"practice_form.gohtml": nil,
+	"test_cookie.gohtml":   nil,
 }
 
 //go:embed templates/*

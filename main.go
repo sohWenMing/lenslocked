@@ -19,7 +19,10 @@ type templateDirAndPath struct {
 
 func main() {
 
-	dbc := models.InitDBConnections()
+	dbc, err := models.InitDBConnections()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer dbc.DB.Close()
 
 	template := views.LoadTemplates()
@@ -38,6 +41,8 @@ func main() {
 	r.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml",
 		views.BaseTemplateToData["persona_multiple.gohtml"]))
 	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))
+	r.Get("/test_cookie", controllers.HandlerExecuteTemplate(template, "test_cookie.gohtml", views.BaseTemplateToData["test_cookie.gohtml"]))
+	r.Get("/send_cookie", controllers.TestSendCookie)
 
 	r.Get("/", controllers.HandlerExecuteTemplate(template, "home.gohtml", nil))
 	// ##### POST Method Handlers #####
@@ -48,5 +53,5 @@ func main() {
 	r.NotFound(controllers.ErrNotFoundHandler)
 
 	fmt.Println("Starting the server on :3000...")
-	log.Fatal(http.ListenAndServe(":3000", r))
+	log.Fatal(http.ListenAndServe(":3000", controllers.CSRFProtect()(r)))
 }

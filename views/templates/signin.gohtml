@@ -2,13 +2,25 @@
 <div class="py-10 flex justify-center">
     <div class="px-8 py-8 bg-white rounded shadow">
         <h1 class="py-4 text-center text-3xl font-bold text-gray-900">
-        Sign In
+        Welcome Back!
         </h1>
         <form action="/signin" method="post">
+            {{ .CSRFField }}
             {{ template "input" .EmailInputAttribs}}
             {{ template "input" .PasswordInputAttribs}}
             <div class="mt-1">
-                <button class="text-white w-full px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded" type="submit">Sign In!</button>
+                <button class="text-white w-full px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded" type="submit">Sign In</button>
+            </div>
+            <div class="w-full flex items-center">
+                <p class="my-1">
+                    Need an account?                 
+                </p>
+                <a class="underline ml-2" href="/signup">Sign Up</a> 
+
+            </div>
+                <p class="text-xs text-gray-500">
+                    <a class="underline" href="/forgot_passwords">Forgot password?</a> 
+                </p>
         </form>
     </div>
 </div>

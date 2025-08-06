@@ -34,3 +34,16 @@ func TestHandler(testText string) http.HandlerFunc {
 		fmt.Fprintf(w, testText)
 	}
 }
+
+func TestSendCookie(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("email")
+	if err != nil {
+		fmt.Println("err: ", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	returnedString := fmt.Sprintf("name: %s value: %s", cookie.Name, cookie.Value)
+	fmt.Fprintf(w, returnedString)
+	fmt.Fprintf(w, "Headers %v\n", r.Header)
+}

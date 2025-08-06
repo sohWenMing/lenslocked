@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gorilla/csrf"
 	"github.com/sohWenMing/lenslocked/models"
 	"github.com/sohWenMing/lenslocked/views"
 )
@@ -31,8 +32,7 @@ type SignupFormController struct {
 }
 
 func (s *SignupFormController) Load(w http.ResponseWriter, r *http.Request) {
-	initFormData := views.SignUpSignInFormData
-	initFormData.SetEmailValue(r.FormValue("email"))
+	initFormData := setSignInSignUpFormData(r)
 	s.FormController.Templates.ExecTemplate(w, "signup.gohtml", initFormData)
 }
 
@@ -71,8 +71,7 @@ type SignInFormController struct {
 }
 
 func (s *SignInFormController) Load(w http.ResponseWriter, r *http.Request) {
-	initFormData := views.SignUpSignInFormData
-	initFormData.SetEmailValue(r.FormValue("email"))
+	initFormData := setSignInSignUpFormData(r)
 	s.FormController.Templates.ExecTemplate(w, "signin.gohtml", initFormData)
 }
 
@@ -99,6 +98,13 @@ func HandlerSigninForm(dbc *models.DBConnections) func(w http.ResponseWriter, r 
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		cookie := http.Cookie{
+			Name:     "email",
+			Value:    loggedInUserInfo.Email,
+			Path:     "/",
+			HttpOnly: true,
+		}
+		http.SetCookie(w, &cookie)
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "<p>user with email %s has been successfully logged in", loggedInUserInfo.Email)
 	}
@@ -112,4 +118,11 @@ func parseEmailAndPasswordFromForm(r *http.Request) (email, password string, err
 	email = r.PostForm.Get("email")
 	password = r.PostForm.Get("password")
 	return email, password, nil
+}
+
+func setSignInSignUpFormData(r *http.Request) views.SignInSignUpForm {
+	initFormData := views.SignUpSignInFormData
+	initFormData.SetCSRFField(csrf.TemplateField(r))
+	initFormData.SetEmailValue(r.FormValue("email"))
+	return initFormData
 }
