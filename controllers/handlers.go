@@ -31,7 +31,7 @@ func ErrNotFoundHandler(w http.ResponseWriter, r *http.Request) {
 func TestHandler(testText string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, testText)
+		fmt.Fprint(w, testText)
 	}
 }
 
@@ -44,6 +44,6 @@ func TestSendCookie(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	returnedString := fmt.Sprintf("name: %s value: %s", cookie.Name, cookie.Value)
-	fmt.Fprintf(w, returnedString)
+	fmt.Fprint(w, returnedString)
 	fmt.Fprintf(w, "Headers %v\n", r.Header)
 }

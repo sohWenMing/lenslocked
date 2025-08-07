@@ -18,7 +18,7 @@ type templateDirAndPath struct {
 }
 
 func main() {
-
+	envVars, err := models.LoadEnv(".env")
 	dbc, err := models.InitDBConnections()
 	if err != nil {
 		log.Fatal(err)
@@ -52,6 +52,8 @@ func main() {
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)
 
+	CSRFMw := controllers.CSRFProtect(envVars.IsDev, envVars.CSRFSecretKey)
+
 	fmt.Println("Starting the server on :3000...")
-	log.Fatal(http.ListenAndServe(":3000", r))
+	log.Fatal(http.ListenAndServe(":3000", CSRFMw(r)))
 }
