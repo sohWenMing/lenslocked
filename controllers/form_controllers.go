@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/csrf"
 	"github.com/sohWenMing/lenslocked/models"
 	"github.com/sohWenMing/lenslocked/views"
 )
@@ -122,7 +121,6 @@ func parseEmailAndPasswordFromForm(r *http.Request) (email, password string, err
 
 func setSignInSignUpFormData(r *http.Request) views.SignInSignUpForm {
 	initFormData := views.SignUpSignInFormData
-	initFormData.SetCSRFField(csrf.TemplateField(r))
-	initFormData.SetEmailValue(r.FormValue("email"))
+	// initFormData.SetEmailValue(r.FormValue("email"))
 	return initFormData
 }

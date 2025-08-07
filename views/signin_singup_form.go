@@ -1,10 +1,7 @@
 package views
 
-import "html/template"
-
 type SignInSignUpForm struct {
 	EmailInputAttribs, PasswordInputAttribs inputHTMLAttribs
-	CSRFField                               template.HTML
 }
 
 var SignUpSignInFormData = SignInSignUpForm{
@@ -36,7 +33,4 @@ func (s *SignInSignUpForm) SetEmailValue(input string) {
 }
 func (s *SignInSignUpForm) SetPasswordValue(input string) {
 	s.PasswordInputAttribs.Value = input
-}
-func (s *SignInSignUpForm) SetCSRFField(input template.HTML) {
-	s.CSRFField = input
 }

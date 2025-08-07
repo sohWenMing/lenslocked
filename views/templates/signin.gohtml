@@ -5,7 +5,6 @@
         Welcome Back!
         </h1>
         <form action="/signin" method="post">
-            {{ .CSRFField }}
             {{ template "input" .EmailInputAttribs}}
             {{ template "input" .PasswordInputAttribs}}
             <div class="mt-1">

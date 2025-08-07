@@ -53,5 +53,5 @@ func main() {
 	r.NotFound(controllers.ErrNotFoundHandler)
 
 	fmt.Println("Starting the server on :3000...")
-	log.Fatal(http.ListenAndServe(":3000", controllers.CSRFProtect()(r)))
+	log.Fatal(http.ListenAndServe(":3000", r))
 }
