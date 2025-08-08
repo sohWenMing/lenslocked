@@ -9,8 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-var isDev = true
-
 func TestGetUrlParam(t *testing.T) {
 	type test struct {
 		name           string

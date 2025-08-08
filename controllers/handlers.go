@@ -11,7 +11,7 @@ import (
 func HandlerExecuteTemplate(template ExecutorTemplate, fileName string, data any) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "text/html")
-		template.ExecTemplate(w, fileName, data)
+		template.ExecTemplate(w, r, fileName, data)
 	}
 }
 

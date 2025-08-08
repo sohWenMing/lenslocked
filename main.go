@@ -38,8 +38,13 @@ func main() {
 	r.Get("/signin", formNameToLoader["signin_form"].Load)
 	r.Get("/faq", controllers.HandlerExecuteTemplate(template, "faq.gohtml",
 		views.BaseTemplateToData["faq.gohtml"]))
-	r.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml",
-		views.BaseTemplateToData["persona_multiple.gohtml"]))
+
+	r.Route("/user", func(sr chi.Router) {
+		sr.Use(controllers.CookieAuthMiddleWare)
+		sr.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml",
+			views.BaseTemplateToData["persona_multiple.gohtml"]))
+	})
+	// these are protected subrroutes, where we would want ot check for the existence of a cookie in the request
 	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))
 	r.Get("/test_cookie", controllers.HandlerExecuteTemplate(template, "test_cookie.gohtml", views.BaseTemplateToData["test_cookie.gohtml"]))
 	r.Get("/send_cookie", controllers.TestSendCookie)
