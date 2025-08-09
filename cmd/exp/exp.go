@@ -2,26 +2,44 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net/http"
-
-	"github.com/go-chi/chi/v5"
+	"time"
 )
 
 func main() {
-	r := chi.NewRouter()
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		cookie := &http.Cookie{
-			Name:  "TestCookie",
-			Value: "This-is-a-test-cookie",
-			Path:  "/test-cookie",
-		}
-		http.SetCookie(w, cookie)
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("check your browser for a cookie!"))
-	})
-	fmt.Println("server listening on port 4000")
-	log.Fatal(http.ListenAndServe(":4000", r))
+	startTime := time.Now()
+	combinations := getBitCombinations(8 * 6)
+	for i, row := range combinations {
+		fmt.Printf("%d: %v\n", i, row)
+	}
+	timeTaken := time.Since(startTime).Seconds()
+	fmt.Printf("Time Taken %v", timeTaken)
+
+	// i want to exhaust all possibilites
 }
 
-// i want a function that adds a prefix to a string
+func getBitCombinations(numBytes int) [][]int {
+	if numBytes < 1 {
+		return [][]int{}
+	}
+	return AppendBitRecursive([][]int{
+		{0}, {1},
+	}, 1, numBytes)
+}
+
+func AppendBitRecursive(currentSlices [][]int, curIdx int, lastIdx int) (returnedSlices [][]int) {
+	if curIdx == lastIdx {
+		return currentSlices
+	}
+	bitSlice := []int{0, 1}
+	workingSlices := [][]int{}
+	for _, slice := range currentSlices {
+
+		// here we would isolate each slice, so for example [0], or [1]
+		for _, bit := range bitSlice {
+			appendedSlice := append(append([]int{}, slice...), bit)
+			workingSlices = append(workingSlices, appendedSlice)
+			//[0, 0]
+		}
+	}
+	return AppendBitRecursive(workingSlices, curIdx+1, lastIdx)
+}

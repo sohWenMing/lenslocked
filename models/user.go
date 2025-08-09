@@ -27,19 +27,6 @@ type UserService struct {
 	db *sql.DB
 }
 
-func (us *UserService) CreateUserTableIfNotExist() {
-	_, err := us.db.Exec(`
-			CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			email TEXT UNIQUE NOT NULL,
-			password_hash TEXT NOT NULL
-			);
-		`)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (us *UserService) CreateUser(newUserToCreate UserToPlainTextPassword) (*User, error) {
 	preppedInfo := prepUserToPlainTextPassword(newUserToCreate)
 	hashBytes, err := bcrypt.GenerateFromPassword(

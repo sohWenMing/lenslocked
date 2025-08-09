@@ -53,10 +53,5 @@ func InitDBConnections() (dbc *DBConnections, err error) {
 		userServicePtr,
 		db,
 	}
-	dbc.InitCreatedTablesIfNotExist()
 	return dbc, nil
-}
-
-func (dbc *DBConnections) InitCreatedTablesIfNotExist() {
-	dbc.UserService.CreateUserTableIfNotExist()
 }
