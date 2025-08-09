@@ -1,10 +1,13 @@
 package controllers
 
 import (
+	"context"
+	"fmt"
 	"html/template"
 	"net/http"
 
 	"github.com/gorilla/csrf"
+	"github.com/sohWenMing/lenslocked/models"
 )
 
 func CSRFProtect(isDev bool, secretKey string) func(http.Handler) http.Handler {
@@ -20,19 +23,29 @@ func GetCSRFTokenFromRequest(r *http.Request) template.HTML {
 	return csrf.TemplateField(r)
 }
 
-func CookieAuthMiddleWare(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("email")
-		if err != nil {
-			http.Redirect(w, r, "/signin", http.StatusPermanentRedirect)
-			return
-		}
-		if cookie.Value == "" {
-			http.Redirect(w, r, "/login", http.StatusPermanentRedirect)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+func CookieAuthMiddleWare(ss *models.SessionService) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			sessionCookie, err := r.Cookie("sessionToken")
+			if err != nil {
+				fmt.Println("cookie error occured: ", err)
+				http.Redirect(w, r, "/signin", http.StatusFound)
+				return
+			}
+			if sessionCookie.Value == "" {
+				http.Redirect(w, r, "/signin", http.StatusFound)
+				return
+			}
+
+			session, err := ss.ViaToken(sessionCookie.Value)
+			if err != nil {
+				http.Redirect(w, r, "/signin", http.StatusFound)
+			}
+			ctx := context.WithValue(r.Context(), "userId", session.UserID)
+			r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // the middleware takes in the next handler - so if everything passes then it will delegate on to the next handler

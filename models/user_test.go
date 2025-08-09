@@ -1,13 +1,9 @@
 package models
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"testing"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 var dbc *DBConnections
@@ -20,10 +16,6 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	dbc = databaseConnection
-	userService = UserService{
-		dbc.DB,
-		dbc.SessionService,
-	}
 	code := m.Run()
 	if err := dbc.DB.Close(); err != nil {
 		fmt.Println("error closing db: ", err)
@@ -31,63 +23,69 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestLoginUser(t *testing.T) {
+func TestCreateUser(t *testing.T) {
+	createdUserIds := []int{}
 	type test struct {
-		testName       string
-		userToPassword UserToPlainTextPassword
-		expected       LoggedInUserInfo
-		expectedErr    error
+		name           string
+		enteredInfo    UserToPlainTextPassword
+		expectedErrMsg string
 		isErrExpected  bool
 	}
 
 	tests := []test{
 		{
-			"first test, to get valid user",
-			UserToPlainTextPassword{
-				"wenming.soh@gmail.com",
-				"Holoq123holoq123",
-			},
-			LoggedInUserInfo{
-				1, "wenming.soh@gmail.com",
-			},
-			nil,
+			"test email validation",
+			UserToPlainTextPassword{"hello@test.com", "Holoq123holoq123"},
+			"",
 			false,
 		},
 		{
-			"second test, should fail password",
-			UserToPlainTextPassword{
-				"wenming.soh@gmail.com",
-				"failing_pw",
-			},
-			LoggedInUserInfo{},
-			bcrypt.ErrMismatchedHashAndPassword,
+			"test duplicate email ",
+			UserToPlainTextPassword{"hello@test.com", "Holoq123holoq123"},
+			"",
+			true,
+		},
+		{
+			"test wrong password ",
+			UserToPlainTextPassword{"hello1@test.com", "12345"},
+			"",
 			true,
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.testName, func(t *testing.T) {
-			user, err := userService.LoginUser(test.userToPassword)
+		t.Run(test.name, func(t *testing.T) {
+			user, err := dbc.UserService.CreateUser(test.enteredInfo)
+			if err == nil {
+				createdUserIds = append(createdUserIds, user.ID)
+			}
 			switch test.isErrExpected {
 			case true:
 				if err == nil {
-					t.Errorf("expected error, didn't get one")
+					t.Error("error expected, didn't get one\n")
+					return
 				}
-				var target *HandledError
-				if errors.As(err, &target) {
-					if target.err != test.expectedErr {
-						t.Errorf("expected error %v, got %v", test.expectedErr, target.err)
-					}
-				}
-
 			default:
 				if err != nil {
-					t.Fatalf("didn't expect error, got err: %v", err)
+					t.Errorf("didn't expect error, got %v\n", err)
+					return
+				}
+				if user.ID == 0 {
+					t.Errorf("user was not created")
+					return
+				}
+				if user.Session.ID == 0 {
+					t.Errorf("session was not created")
 				}
 			}
-			if !reflect.DeepEqual(user, test.expected) {
-				t.Fatalf("got %v, want %v", user, test.expected)
-			}
 		})
+		// cleanup
+		fmt.Println("rcreated userIds:", createdUserIds)
+	}
+	for _, userId := range createdUserIds {
+		err := dbc.UserService.DeleteUserAndSession(userId)
+		if err != nil {
+			t.Errorf("didn't expect error, got %v\n", err)
+		}
 	}
 }

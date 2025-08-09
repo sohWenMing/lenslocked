@@ -27,6 +27,18 @@ type SessionService struct {
 	db *sql.DB
 }
 
+func (ss *SessionService) ClearPrevSessionsAndCreateNewSessionByUserId(userID int) (session *Session, err error) {
+	err = ss.DeleteAllSessionsTokensByUserId(userID)
+	if err != nil {
+		return nil, err
+	}
+	session, err = ss.Create(userID)
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
+}
+
 /*
 Create will create a new session for the user provided. The session token will
 be created as the Token field on the Session type, but only the hashed session
@@ -41,7 +53,7 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 	row := ss.db.QueryRow(`
 	INSERT into sessions(user_id, token_hash)
 	VALUES($1, $2)
-	returning id, user_id, token_hash 
+	returning id, user_id, token_hash;
 	`, userID, hashedToken)
 	returnedSession := &Session{}
 	returnedSession.Token = newToken
@@ -52,9 +64,31 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 	return returnedSession, nil
 }
 
+func (ss *SessionService) DeleteAllSessionsTokensByUserId(userID int) (err error) {
+	_, err = ss.db.Exec(`
+	DELETE from sessions
+	WHERE user_id = ($1);
+	`, userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ViaToken retrieves the session that is tied to the session token sent with the request
 func (ss *SessionService) ViaToken(token string) (*Session, error) {
-	//TODO, create the querying from the database, to get the session of the user
-	return nil, nil
+	hash := HashSessionToken(token)
+	row := ss.db.QueryRow(`
+	SELECT id, user_id, token_hash 
+	FROM session
+	WHERE token_hash =($1);
+	`, hash)
+	var session Session
+	err := row.Scan(&session.ID, &session.UserID, &session.TokenHash)
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
 }
 
 func VerifySessionToken(token string, hash string) (isVerified bool, err error) {

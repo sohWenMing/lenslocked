@@ -33,6 +33,17 @@ func MapHandledGenericError(err error) *HandledError {
 	}
 }
 
+/*
+Handles case where no rows are returned from query, but by design it's not an error.
+Returns true if no rows are found
+*/
+func CheckIsNoRowsErr(err error) bool {
+	if errors.Is(err, sql.ErrNoRows) {
+		return true
+	}
+	return false
+}
+
 func HandlePgError(err error) error {
 	if errors.Is(err, sql.ErrNoRows) {
 		return MapHandledError(err, "No user could be found with that email address")

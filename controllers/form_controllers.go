@@ -74,13 +74,12 @@ func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		//TODO, remove session information from response after checking
 		sessionInformation := user.Session
 		sessionToken := sessionInformation.Token
 		cookie := mapCookie("sessionToken", sessionToken, "/", true)
 		http.SetCookie(w, cookie)
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "<p>user with email %s has been successfully created", user.Email)
+		fmt.Fprintf(w, "<p>user with userId %d sessionToken %s has been successfully created", user.UserID, user.Session.Token)
 	}
 }
 
@@ -123,7 +122,7 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		cookie := mapCookie("email", loggedInUserInfo.Email, "/", true)
+		cookie := mapCookie("sessionToken", loggedInUserInfo.Session.Token, "/", true)
 		http.SetCookie(w, cookie)
 		// w.WriteHeader(http.StatusOK)
 		// fmt.Fprintf(w, "<p>user with email %s has been successfully logged in", loggedInUserInfo.Email)
