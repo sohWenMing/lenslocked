@@ -45,6 +45,7 @@ func main() {
 			views.BaseTemplateToData["persona_multiple.gohtml"]))
 	})
 	// these are protected subrroutes, where we would want ot check for the existence of a cookie in the request
+
 	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))
 	r.Get("/test_cookie", controllers.HandlerExecuteTemplate(template, "test_cookie.gohtml", views.BaseTemplateToData["test_cookie.gohtml"]))
 	r.Get("/send_cookie", controllers.TestSendCookie)
@@ -52,7 +53,7 @@ func main() {
 	r.Get("/", controllers.HandlerExecuteTemplate(template, "home.gohtml", nil))
 	// ##### POST Method Handlers #####
 	r.Post("/signup", controllers.HandleSignupForm(dbc))
-	r.Post("/signin", controllers.HandlerSigninForm(dbc))
+	r.Post("/signin", controllers.HandleSignInForm(dbc))
 
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)

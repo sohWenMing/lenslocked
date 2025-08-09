@@ -16,7 +16,7 @@ type Session struct {
 	UserID int
 	/*
 		Token is only set when creating a new session. When looking up a session
-		this will be left empoty, as we only store the hash of a session token
+		this will be left empty, as we only store the hash of a session token
 		in our database, and we can't reverse it into a raw token
 	*/
 	Token     string
@@ -28,16 +28,28 @@ type SessionService struct {
 }
 
 /*
-	Create will create a new session for the user provided. The session token will
-	be created as the Token field on the Session type, but only the hashed session
-	token will be stored on the database.
+Create will create a new session for the user provided. The session token will
+be created as the Token field on the Session type, but only the hashed session
+token will be stored on the database.
 */
-
 func (ss *SessionService) Create(userID int) (*Session, error) {
-	//TODO, create session token
-	//TODO, hash the token
-
-	return nil, nil
+	newToken, err := SessionToken()
+	if err != nil {
+		return nil, err
+	}
+	hashedToken := HashSessionToken(newToken)
+	row := ss.db.QueryRow(`
+	INSERT into sessions(user_id, token_hash)
+	VALUES($1, $2)
+	returning id, user_id, token_hash 
+	`, userID, hashedToken)
+	returnedSession := &Session{}
+	returnedSession.Token = newToken
+	err = row.Scan(&returnedSession.ID, &returnedSession.UserID, &returnedSession.TokenHash)
+	if err != nil {
+		return nil, err
+	}
+	return returnedSession, nil
 }
 
 func (ss *SessionService) ViaToken(token string) (*Session, error) {
@@ -66,10 +78,10 @@ func HashSessionToken(token string) string {
 }
 
 func SessionToken() (string, error) {
-	return ByteString(SessionTokenSize)
+	return bytestring(SessionTokenSize)
 }
 
-func ByteString(n int) (string, error) {
+func bytestring(n int) (string, error) {
 	bytes, err := randBytes(n)
 	if err != nil {
 		return "", fmt.Errorf("string: %w", err)

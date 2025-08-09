@@ -5,7 +5,7 @@
             Start sharing your photos today!
         </h1>
         <form action="/signup" method="post">
-            {{ .CSRFField }}
+            {{ csrfField }}
             {{ template "input" .EmailInputAttribs}}
             {{ template "input" .PasswordInputAttribs}}
             <div class="mt-1">

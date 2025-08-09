@@ -74,6 +74,11 @@ func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		//TODO, remove session information from response after checking
+		sessionInformation := user.Session
+		sessionToken := sessionInformation.Token
+		cookie := mapCookie("sessionToken", sessionToken, "/", true)
+		http.SetCookie(w, cookie)
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "<p>user with email %s has been successfully created", user.Email)
 	}
@@ -101,7 +106,7 @@ func InitSignInFormController(template ExecutorTemplateWithCSRF) *SignInFormCont
 	}
 }
 
-func HandlerSigninForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		emailAddress, password, err := parseEmailAndPasswordFromForm(r)
 		if err != nil {
@@ -118,16 +123,20 @@ func HandlerSigninForm(dbc *models.DBConnections) func(w http.ResponseWriter, r 
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		cookie := http.Cookie{
-			Name:     "email",
-			Value:    loggedInUserInfo.Email,
-			Path:     "/",
-			HttpOnly: true,
-		}
-		http.SetCookie(w, &cookie)
+		cookie := mapCookie("email", loggedInUserInfo.Email, "/", true)
+		http.SetCookie(w, cookie)
 		// w.WriteHeader(http.StatusOK)
 		// fmt.Fprintf(w, "<p>user with email %s has been successfully logged in", loggedInUserInfo.Email)
 		http.Redirect(w, r, "/user/about", http.StatusFound)
+	}
+}
+
+func mapCookie(name, value, path string, HTTPOnly bool) *http.Cookie {
+	return &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Path:     path,
+		HttpOnly: HTTPOnly,
 	}
 }
 

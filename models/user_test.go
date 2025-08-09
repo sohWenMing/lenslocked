@@ -22,6 +22,7 @@ func TestMain(m *testing.M) {
 	dbc = databaseConnection
 	userService = UserService{
 		dbc.DB,
+		dbc.SessionService,
 	}
 	code := m.Run()
 	if err := dbc.DB.Close(); err != nil {

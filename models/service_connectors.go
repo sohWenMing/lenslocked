@@ -8,8 +8,9 @@ import (
 )
 
 type DBConnections struct {
-	UserService *UserService
-	DB          *sql.DB
+	UserService    *UserService
+	SessionService *SessionService
+	DB             *sql.DB
 }
 
 type pgConfig struct {
@@ -45,12 +46,17 @@ func InitDBConnections() (dbc *DBConnections, err error) {
 	if err != nil {
 		return nil, err
 	}
+	sessionServicePtr := &SessionService{
+		db,
+	}
 	userServicePtr := &UserService{
 		db,
+		sessionServicePtr,
 	}
 	fmt.Println("DB Connection has been initialised")
 	dbc = &DBConnections{
 		userServicePtr,
+		sessionServicePtr,
 		db,
 	}
 	return dbc, nil
