@@ -108,7 +108,7 @@ func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *
 }
 
 func (us *UserService) LogoutUser(userId int) (err error) {
-	err = us.SessionService.DeleteAllSessionsTokensByUserId(userId)
+	err = us.SessionService.ExpireSessionsTokensByUserId(userId)
 	if err != nil {
 		return err
 	}

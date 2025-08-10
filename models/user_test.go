@@ -249,44 +249,50 @@ func TestDeleteUser(t *testing.T) {
 
 }
 
-// func TestLogoutUser(t *testing.T) {
-// 	createdUserIds := []int{}
-// 	type test struct {
-// 		name                 string
-// 		isErrExpectedOnLogout bool
-// 		userInfo             UserToPlainTextPassword
-// 	}
-// 	tests := []test{
-// 		{
-// 			"test happy flow logout",
-// 			false,
-// 			UserToPlainTextPassword{
-// 				"hello@test.com",
-// 				"Holoq123holoq123",
-// 			},
-// 		},
-// 	}
-// 	for _, test := range(tests) {
-// 		t.Run(test.name, func(t *testing.T) {
-// 			createdUser, err := dbc.UserService.CreateUser(test.userInfo)
-// 			if err != nil {
-// 				t.Errorf("didn't expect error, got %v\n", err)
-// 				return
-// 			}
-// 			createdUserIds = append(createdUserIds, createdUser.ID)
-// 			loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
-// 			if err != nil {
-// 				t.Errorf("didn't expect error, got %v\n", err)
-// 				return
-// 			}
-// 			if test.isErrExpectedOnLogout {
-
-// 			}
-
-// 		})
-// 	}
-// }
-//TODO: Handle Logout tests
+func TestLogoutUser(t *testing.T) {
+	createdUserIds := []int{}
+	type test struct {
+		name     string
+		userInfo UserToPlainTextPassword
+	}
+	tests := []test{
+		{
+			"test happy flow logout",
+			UserToPlainTextPassword{
+				"hello@test.com",
+				"Holoq123holoq123",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			createdUser, err := dbc.UserService.CreateUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			createdUserIds = append(createdUserIds, createdUser.ID)
+			loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			err = dbc.UserService.LogoutUser(loggedInUser.ID)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			nonExpiredSessionCount, err := dbc.UserService.GetNonExpiredSessionsByUserId(loggedInUser.ID)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			if nonExpiredSessionCount != 0 {
+				t.Errorf("expected nonExpiredSessionCount %d, got %d", 0, nonExpiredSessionCount)
+			}
+		})
+	}
+}
 
 func cleanupCreatedUserIds(createdUserIds []int, t *testing.T) {
 	for _, userId := range createdUserIds {
