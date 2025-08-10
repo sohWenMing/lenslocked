@@ -27,8 +27,8 @@ type SessionService struct {
 	db *sql.DB
 }
 
-func (ss *SessionService) ClearPrevSessionsAndCreateNewSessionByUserId(userID int) (session *Session, err error) {
-	err = ss.DeleteAllSessionsTokensByUserId(userID)
+func (ss *SessionService) ExpirePreviousSessionsAndCreateNewSessionByUserId(userID int) (session *Session, err error) {
+	err = ss.ExpireSessionsTokensByUserId(userID)
 	if err != nil {
 		return nil, err
 	}

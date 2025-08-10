@@ -126,14 +126,17 @@ func TestLoginUser(t *testing.T) {
 				_, err := dbc.UserService.LoginUser(changedUserInfo)
 				if err == nil {
 					t.Errorf("expected error, didn't get one")
+					return
 				}
 			default:
 				loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
 				if err != nil {
 					t.Errorf("didn't expect error, got %v\n", err)
+					return
 				}
 				if loggedInUser.Session.UserID != createdUser.ID {
 					t.Errorf("got session userId %d want session userId %d", loggedInUser.Session.UserID, createdUser.ID)
+					return
 				}
 			}
 		})
@@ -292,6 +295,9 @@ func TestLogoutUser(t *testing.T) {
 			}
 		})
 	}
+
+	// cleanup
+	cleanupCreatedUserIds(createdUserIds, t)
 }
 
 func cleanupCreatedUserIds(createdUserIds []int, t *testing.T) {

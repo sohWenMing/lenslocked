@@ -96,7 +96,7 @@ func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *
 	if err != nil {
 		return nil, HandlerBcryptErr(err)
 	}
-	session, err := us.SessionService.ClearPrevSessionsAndCreateNewSessionByUserId(internalUser.ID)
+	session, err := us.SessionService.ExpirePreviousSessionsAndCreateNewSessionByUserId(internalUser.ID)
 	if err != nil {
 		handlerError := HandlePgError(err)
 		//TODO change Print to log function
