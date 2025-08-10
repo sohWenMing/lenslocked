@@ -78,8 +78,7 @@ func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 		sessionToken := sessionInformation.Token
 		cookie := mapCookie("sessionToken", sessionToken, "/", true)
 		http.SetCookie(w, cookie)
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "<p>user with userId %d sessionToken %s has been successfully created", user.UserID, user.Session.Token)
+		http.Redirect(w, r, "/user/about", http.StatusFound)
 	}
 }
 

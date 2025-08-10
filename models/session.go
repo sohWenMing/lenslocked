@@ -80,7 +80,7 @@ func (ss *SessionService) ViaToken(token string) (*Session, error) {
 	hash := HashSessionToken(token)
 	row := ss.db.QueryRow(`
 	SELECT id, user_id, token_hash 
-	FROM session
+	FROM sessions
 	WHERE token_hash =($1);
 	`, hash)
 	var session Session

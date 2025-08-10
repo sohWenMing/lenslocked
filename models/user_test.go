@@ -79,13 +79,75 @@ func TestCreateUser(t *testing.T) {
 				}
 			}
 		})
-		// cleanup
-		fmt.Println("rcreated userIds:", createdUserIds)
 	}
+	// cleanup
+	cleanupCreatedUserIds(createdUserIds, t)
+}
+
+func TestLoginUser(t *testing.T) {
+	createdUserIds := []int{}
+	type test struct {
+		name                 string
+		isErrExpectedOnLogin bool
+		userInfo             UserToPlainTextPassword
+	}
+	tests := []test{
+		{
+			"test happy flow",
+			false,
+			UserToPlainTextPassword{
+				"hello@test.com",
+				"Holoq123holoq123",
+			},
+		},
+		{
+			"test failed login",
+			true,
+			UserToPlainTextPassword{
+				"hello1@test.com",
+				"Holoq123holoq123",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			createdUser, err := dbc.UserService.CreateUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			createdUserIds = append(createdUserIds, createdUser.ID)
+
+			switch test.isErrExpectedOnLogin {
+			case true:
+				changedUserInfo := UserToPlainTextPassword{
+					test.userInfo.Email, "fail_password",
+				}
+				_, err := dbc.UserService.LoginUser(changedUserInfo)
+				if err == nil {
+					t.Errorf("expected error, didn't get one")
+				}
+			default:
+				loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
+				if err != nil {
+					t.Errorf("didn't expect error, got %v\n", err)
+				}
+				if loggedInUser.Session.UserID != createdUser.ID {
+					t.Errorf("got session userId %d want session userId %d", loggedInUser.Session.UserID, createdUser.ID)
+				}
+			}
+		})
+	}
+	// cleanup
+	cleanupCreatedUserIds(createdUserIds, t)
+}
+
+func cleanupCreatedUserIds(createdUserIds []int, t *testing.T) {
 	for _, userId := range createdUserIds {
 		err := dbc.UserService.DeleteUserAndSession(userId)
 		if err != nil {
 			t.Errorf("didn't expect error, got %v\n", err)
 		}
 	}
+
 }

@@ -32,11 +32,9 @@ type UserService struct {
 }
 
 func (us *UserService) CreateUser(newUserToCreate UserToPlainTextPassword) (*User, error) {
-	if !isValidEmail(newUserToCreate.Email) {
-		return nil, errors.New("Email is not valid")
-	}
-	if !isValidPassword(newUserToCreate.PlainTextPassword) {
-		return nil, errors.New("Password is not valid")
+	err := validateInputs(newUserToCreate.Email, newUserToCreate.PlainTextPassword)
+	if err != nil {
+		return nil, err
 	}
 	preppedInfo := prepUserToPlainTextPassword(newUserToCreate)
 	hash, err := generateBcryptHash(preppedInfo.PlainTextPassword)
@@ -56,38 +54,17 @@ func (us *UserService) CreateUser(newUserToCreate UserToPlainTextPassword) (*Use
 	if err != nil {
 		return &User{}, HandlePgError(err)
 	}
-	fmt.Println("internal user: ", internalUser)
 
 	session, err := us.SessionService.Create(internalUser.ID)
 	if err != nil {
 		return &User{}, errors.New("error occured when trying to create session")
 	}
 	internalUser.Session = session
-	returnedUser := &User{
-		internalUser.ID, internalUser.Session,
-	}
-	fmt.Println("returned user: ", returnedUser)
+	returnedUser := mapInternalUserToReturnedUser(internalUser)
 
 	return returnedUser, nil
 }
 
-func isValidEmail(email string) bool {
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func isValidPassword(password string) bool {
-	if password == "" {
-		return false
-	}
-	if len(password) < 6 {
-		return false
-	}
-	return true
-}
 func generateBcryptHash(plainTextPassword string) (hash string, err error) {
 	hashBytes, err := bcrypt.GenerateFromPassword(
 		[]byte(plainTextPassword),
@@ -100,6 +77,10 @@ func generateBcryptHash(plainTextPassword string) (hash string, err error) {
 }
 
 func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *User, err error) {
+	err = validateInputs(userToPassword.Email, userToPassword.PlainTextPassword)
+	if err != nil {
+		return nil, err
+	}
 	preppedInfo := prepUserToPlainTextPassword(userToPassword)
 	row := us.db.QueryRow(`
 		SELECT id, email, password_hash 
@@ -123,7 +104,7 @@ func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *
 		return nil, errors.New(handlerError.Error())
 	}
 	internalUser.Session = session
-	return &User{internalUser.ID, internalUser.Session}, nil
+	return mapInternalUserToReturnedUser(internalUser), nil
 }
 
 func (us *UserService) DeleteUserAndSession(userId int) (err error) {
@@ -141,4 +122,39 @@ func (us *UserService) DeleteUserAndSession(userId int) (err error) {
 func prepUserToPlainTextPassword(u UserToPlainTextPassword) UserToPlainTextPassword {
 	u.Email = strings.ToLower(u.Email)
 	return u
+}
+
+func validateInputs(email, password string) error {
+	if !isValidEmail(email) {
+		return errors.New("email is not valid")
+	}
+	if !isValidPassword(password) {
+		return errors.New("password is not valid")
+	}
+	return nil
+}
+
+func isValidEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func isValidPassword(password string) bool {
+	if password == "" {
+		return false
+	}
+	if len(password) < 6 {
+		return false
+	}
+	return true
+}
+
+func mapInternalUserToReturnedUser(internalUser internalUserStruct) *User {
+	returnedUser := &User{
+		internalUser.ID, internalUser.Session,
+	}
+	return returnedUser
 }

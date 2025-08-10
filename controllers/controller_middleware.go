@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"html/template"
 	"net/http"
 
@@ -28,7 +27,6 @@ func CookieAuthMiddleWare(ss *models.SessionService) func(next http.Handler) htt
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			sessionCookie, err := r.Cookie("sessionToken")
 			if err != nil {
-				fmt.Println("cookie error occured: ", err)
 				http.Redirect(w, r, "/signin", http.StatusFound)
 				return
 			}
@@ -42,7 +40,7 @@ func CookieAuthMiddleWare(ss *models.SessionService) func(next http.Handler) htt
 				http.Redirect(w, r, "/signin", http.StatusFound)
 			}
 			ctx := context.WithValue(r.Context(), "userId", session.UserID)
-			r.WithContext(ctx)
+			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 		})
 	}
