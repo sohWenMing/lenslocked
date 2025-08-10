@@ -142,6 +142,152 @@ func TestLoginUser(t *testing.T) {
 	cleanupCreatedUserIds(createdUserIds, t)
 }
 
+func TestExpireSessionsByUserId(t *testing.T) {
+	createdUserIds := []int{}
+	type test struct {
+		name     string
+		userInfo UserToPlainTextPassword
+	}
+	tests := []test{
+		{
+			"test happy flow expire sessions by user id",
+			UserToPlainTextPassword{
+				"hello@test.com",
+				"Holoq123holoq123",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			createdUser, err := dbc.UserService.CreateUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			createdUserIds = append(createdUserIds, createdUser.ID)
+			loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			err = dbc.UserService.ExpireSessionsTokensByUserId(loggedInUser.ID)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			nonExpiredCount, err := dbc.UserService.GetNonExpiredSessionsByUserId(loggedInUser.ID)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			if nonExpiredCount != 0 {
+				t.Errorf("expected nonExpiredCount %d, got %d", 0, nonExpiredCount)
+			}
+		})
+	}
+	// cleanup
+	cleanupCreatedUserIds(createdUserIds, t)
+}
+
+func TestDeleteUser(t *testing.T) {
+	type test struct {
+		name     string
+		userInfo UserToPlainTextPassword
+	}
+	tests := []test{
+		{
+			"test delete user",
+			UserToPlainTextPassword{
+				"hello@test.com",
+				"Holoq123holoq123",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := dbc.UserService.CreateUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			nonExpiredCount, err := dbc.UserService.GetNonExpiredSessionsByUserId(loggedInUser.ID)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			if nonExpiredCount != 1 {
+				t.Errorf("expected nonExpiredCount %d, got %d", 1, nonExpiredCount)
+			}
+			err = dbc.UserService.DeleteUserAndSession(loggedInUser.ID)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			userCount, err := dbc.UserService.GetUserCountById(loggedInUser.ID)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			if userCount != 0 {
+				t.Errorf("expected userCount %d, got %d", 0, userCount)
+			}
+			nonExpiredCountAfterDelete, err := dbc.UserService.GetNonExpiredSessionsByUserId(loggedInUser.ID)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			if nonExpiredCountAfterDelete != 0 {
+				t.Errorf("expected nonExpiredCountAfterDelete %d, got %d", 0, nonExpiredCountAfterDelete)
+			}
+		})
+	}
+
+}
+
+// func TestLogoutUser(t *testing.T) {
+// 	createdUserIds := []int{}
+// 	type test struct {
+// 		name                 string
+// 		isErrExpectedOnLogout bool
+// 		userInfo             UserToPlainTextPassword
+// 	}
+// 	tests := []test{
+// 		{
+// 			"test happy flow logout",
+// 			false,
+// 			UserToPlainTextPassword{
+// 				"hello@test.com",
+// 				"Holoq123holoq123",
+// 			},
+// 		},
+// 	}
+// 	for _, test := range(tests) {
+// 		t.Run(test.name, func(t *testing.T) {
+// 			createdUser, err := dbc.UserService.CreateUser(test.userInfo)
+// 			if err != nil {
+// 				t.Errorf("didn't expect error, got %v\n", err)
+// 				return
+// 			}
+// 			createdUserIds = append(createdUserIds, createdUser.ID)
+// 			loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
+// 			if err != nil {
+// 				t.Errorf("didn't expect error, got %v\n", err)
+// 				return
+// 			}
+// 			if test.isErrExpectedOnLogout {
+
+// 			}
+
+// 		})
+// 	}
+// }
+//TODO: Handle Logout tests
+
 func cleanupCreatedUserIds(createdUserIds []int, t *testing.T) {
 	for _, userId := range createdUserIds {
 		err := dbc.UserService.DeleteUserAndSession(userId)

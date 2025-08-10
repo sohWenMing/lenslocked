@@ -107,11 +107,29 @@ func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *
 	return mapInternalUserToReturnedUser(internalUser), nil
 }
 
-func (us *UserService) DeleteUserAndSession(userId int) (err error) {
+func (us *UserService) LogoutUser(userId int) (err error) {
 	err = us.SessionService.DeleteAllSessionsTokensByUserId(userId)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (us *UserService) GetUserCountById(userId int) (count int, err error) {
+
+	row := us.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM users
+		WHERE id=($1)
+	`, userId)
+	err = row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (us *UserService) DeleteUserAndSession(userId int) (err error) {
 	_, err = us.db.Exec(`
 	DELETE from users
 	WHERE id=($1);`, userId)

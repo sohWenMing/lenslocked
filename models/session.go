@@ -63,6 +63,32 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 	}
 	return returnedSession, nil
 }
+func (ss *SessionService) ExpireSessionsTokensByUserId(userID int) error {
+	_, err := ss.db.Exec(`
+		UPDATE sessions	
+		SET is_expired =($1)
+		WHERE user_id =($2);
+	`, true, userID)
+	if err != nil {
+		return HandlePgError(err)
+	}
+	return nil
+}
+
+func (ss *SessionService) GetNonExpiredSessionsByUserId(userID int) (numSessions int, err error) {
+	var count int
+	row := ss.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM sessions
+		WHERE user_id=($1)
+		AND is_expired=($2);
+	`, userID, false)
+	err = row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
 
 func (ss *SessionService) DeleteAllSessionsTokensByUserId(userID int) (err error) {
 	_, err = ss.db.Exec(`
