@@ -318,28 +318,39 @@ func TestRequireRedirect(t *testing.T) {
 				"Holoq123holoq123",
 			},
 		},
+		{
+			"should require redirect",
+			true,
+			UserToPlainTextPassword{
+				"hello@test1.com",
+				"Holoq123holoq123",
+			},
+		},
 	}
 	for _, test := range tests {
-		createdUser, err := dbc.UserService.CreateUser(test.userInfo)
-		if err != nil {
-			t.Errorf("didn't expect error, got %v\n", err)
-			return
-		}
-		createdUserIds = append(createdUserIds, createdUser.ID)
-		loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
-		token := loggedInUser.Token
-		var isRequireRedirect bool
+		t.Run(test.name, func(t *testing.T) {
+			createdUser, err := dbc.UserService.CreateUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
+			createdUserIds = append(createdUserIds, createdUser.ID)
+			loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
+			token := loggedInUser.Token
+			var isRequireRedirect bool
 
-		switch test.isExpectRedirect {
-		case true:
-			isRequireRedirect = dbc.SessionService.CheckRequireRedirect(token, time.Now().Add(-15*time.Minute))
-		default:
-			isRequireRedirect = dbc.SessionService.CheckRequireRedirect(token, time.Now())
-		}
+			switch test.isExpectRedirect {
+			case true:
+				fmt.Println("test case ran with isExpectRedirect to true")
+				isRequireRedirect = dbc.SessionService.CheckSessionExpired(token, time.Now().Add(16*time.Minute))
+			default:
+				isRequireRedirect = dbc.SessionService.CheckSessionExpired(token, time.Now())
+			}
 
-		if isRequireRedirect != test.isExpectRedirect {
-			t.Errorf("got %t, want %t\n", test.isExpectRedirect, isRequireRedirect)
-		}
+			if isRequireRedirect != test.isExpectRedirect {
+				t.Errorf("got %t, want %t\n", isRequireRedirect, test.isExpectRedirect)
+			}
+		})
 	}
 	// cleanup
 	cleanupCreatedUserIds(createdUserIds, t)

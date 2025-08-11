@@ -102,7 +102,7 @@ func (ss *SessionService) DeleteAllSessionsTokensByUserId(userID int) (err error
 	return nil
 }
 
-func (ss *SessionService) CheckRequireRedirect(token string, cutOffTime time.Time) (isRequireRedirect bool) {
+func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time) (isRequireRedirect bool) {
 	type hashExpiryStruct struct {
 		id        int
 		expiresOn time.Time
@@ -120,6 +120,9 @@ func (ss *SessionService) CheckRequireRedirect(token string, cutOffTime time.Tim
 		return true
 
 	}
+	fmt.Println("expiresOn: ", hashExpiry.expiresOn.UTC())
+	fmt.Println("cutOffTime: ", cutOffTime.UTC())
+
 	if hashExpiry.expiresOn.UTC().Before(cutOffTime.UTC()) {
 		return true
 	}
