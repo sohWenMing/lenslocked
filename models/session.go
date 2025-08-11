@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
 )
 
 const SessionTokenSize = 32
@@ -101,6 +102,30 @@ func (ss *SessionService) DeleteAllSessionsTokensByUserId(userID int) (err error
 	return nil
 }
 
+func (ss *SessionService) CheckRequireRedirect(token string, cutOffTime time.Time) (isRequireRedirect bool) {
+	type hashExpiryStruct struct {
+		id        int
+		expiresOn time.Time
+	}
+	var hashExpiry hashExpiryStruct
+	tokenHash := HashSessionToken(token)
+	row := ss.db.QueryRow(`
+		SELECT id, expires_on
+		FROM sessions
+		WHERE token_hash=($1);
+	`, tokenHash)
+	// if any error occurs, then we take it that either no row was returned or there was an error, so we need to redirect
+	if err := row.Scan(&hashExpiry.id, &hashExpiry.expiresOn); err != nil {
+		fmt.Println("err occured: ", err)
+		return true
+
+	}
+	if hashExpiry.expiresOn.UTC().Before(cutOffTime.UTC()) {
+		return true
+	}
+	return false
+}
+
 // ViaToken retrieves the session that is tied to the session token sent with the request
 func (ss *SessionService) ViaToken(token string) (*Session, error) {
 	hash := HashSessionToken(token)
@@ -110,6 +135,7 @@ func (ss *SessionService) ViaToken(token string) (*Session, error) {
 	WHERE token_hash =($1);
 	`, hash)
 	var session Session
+	// if any error occurs, then we take it that either no row was returned or there was an error, so we need to redirect
 	err := row.Scan(&session.ID, &session.UserID, &session.TokenHash)
 	if err != nil {
 		return nil, err

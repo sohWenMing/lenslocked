@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
 var dbc *DBConnections
@@ -76,6 +77,7 @@ func TestCreateUser(t *testing.T) {
 				}
 				if user.Session.ID == 0 {
 					t.Errorf("session was not created")
+					return
 				}
 			}
 		})
@@ -298,6 +300,50 @@ func TestLogoutUser(t *testing.T) {
 
 	// cleanup
 	cleanupCreatedUserIds(createdUserIds, t)
+}
+
+func TestRequireRedirect(t *testing.T) {
+	createdUserIds := []int{}
+	type test struct {
+		name             string
+		isExpectRedirect bool
+		userInfo         UserToPlainTextPassword
+	}
+	tests := []test{
+		{
+			"happy flow, should not require redirect",
+			false,
+			UserToPlainTextPassword{
+				"hello@test.com",
+				"Holoq123holoq123",
+			},
+		},
+	}
+	for _, test := range tests {
+		createdUser, err := dbc.UserService.CreateUser(test.userInfo)
+		if err != nil {
+			t.Errorf("didn't expect error, got %v\n", err)
+			return
+		}
+		createdUserIds = append(createdUserIds, createdUser.ID)
+		loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
+		token := loggedInUser.Token
+		var isRequireRedirect bool
+
+		switch test.isExpectRedirect {
+		case true:
+			isRequireRedirect = dbc.SessionService.CheckRequireRedirect(token, time.Now().Add(-15*time.Minute))
+		default:
+			isRequireRedirect = dbc.SessionService.CheckRequireRedirect(token, time.Now())
+		}
+
+		if isRequireRedirect != test.isExpectRedirect {
+			t.Errorf("got %t, want %t\n", test.isExpectRedirect, isRequireRedirect)
+		}
+	}
+	// cleanup
+	cleanupCreatedUserIds(createdUserIds, t)
+
 }
 
 func cleanupCreatedUserIds(createdUserIds []int, t *testing.T) {
