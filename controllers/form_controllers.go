@@ -123,8 +123,6 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 		}
 		cookie := mapCookie("sessionToken", loggedInUserInfo.Session.Token, "/", true)
 		http.SetCookie(w, cookie)
-		// w.WriteHeader(http.StatusOK)
-		// fmt.Fprintf(w, "<p>user with email %s has been successfully logged in", loggedInUserInfo.Email)
 		http.Redirect(w, r, "/user/about", http.StatusFound)
 	}
 }

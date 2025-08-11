@@ -75,6 +75,33 @@ func (ss *SessionService) ExpireSessionsTokensByUserId(userID int) error {
 	}
 	return nil
 }
+func (ss *SessionService) ExpireSessionByToken(token string) error {
+	tokenHash := HashSessionToken(token)
+	_, err := ss.db.Exec(`
+	UPDATE sessions
+	SEt is_expired=($1)
+	WHERE token_hash=($2)
+	`, true, tokenHash)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ss *SessionService) RefreshSession(token string) error {
+	tokenHash := HashSessionToken(token)
+	newExpiry := time.Now().UTC().Add(15 * time.Minute)
+	_, err := ss.db.Exec(`
+	UPDATE sessions
+	Set expires_on=($1)
+	WHERE token_hash=($2)
+	`, newExpiry, tokenHash)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
 
 func (ss *SessionService) GetNonExpiredSessionsByUserId(userID int) (numSessions int, err error) {
 	var count int
@@ -102,7 +129,7 @@ func (ss *SessionService) DeleteAllSessionsTokensByUserId(userID int) (err error
 	return nil
 }
 
-func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time) (isRequireRedirect bool) {
+func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time) (isRequireRedirect bool, isSessionFound bool) {
 	type hashExpiryStruct struct {
 		id        int
 		expiresOn time.Time
@@ -117,16 +144,16 @@ func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time
 	// if any error occurs, then we take it that either no row was returned or there was an error, so we need to redirect
 	if err := row.Scan(&hashExpiry.id, &hashExpiry.expiresOn); err != nil {
 		fmt.Println("err occured: ", err)
-		return true
+		return true, false
 
 	}
 	fmt.Println("expiresOn: ", hashExpiry.expiresOn.UTC())
 	fmt.Println("cutOffTime: ", cutOffTime.UTC())
 
 	if hashExpiry.expiresOn.UTC().Before(cutOffTime.UTC()) {
-		return true
+		return true, true
 	}
-	return false
+	return false, true
 }
 
 // ViaToken retrieves the session that is tied to the session token sent with the request

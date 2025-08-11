@@ -342,9 +342,9 @@ func TestRequireRedirect(t *testing.T) {
 			switch test.isExpectRedirect {
 			case true:
 				fmt.Println("test case ran with isExpectRedirect to true")
-				isRequireRedirect = dbc.SessionService.CheckSessionExpired(token, time.Now().Add(16*time.Minute))
+				isRequireRedirect, _ = dbc.SessionService.CheckSessionExpired(token, time.Now().Add(16*time.Minute))
 			default:
-				isRequireRedirect = dbc.SessionService.CheckSessionExpired(token, time.Now())
+				isRequireRedirect, _ = dbc.SessionService.CheckSessionExpired(token, time.Now())
 			}
 
 			if isRequireRedirect != test.isExpectRedirect {

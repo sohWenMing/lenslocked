@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/csrf"
 	"github.com/sohWenMing/lenslocked/models"
@@ -22,6 +24,9 @@ func GetCSRFTokenFromRequest(r *http.Request) template.HTML {
 	return csrf.TemplateField(r)
 }
 
+/*
+Function checks for the existence of a session cookie, if does not exist, will redirect to signin page
+*/
 func CookieAuthMiddleWare(ss *models.SessionService) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,8 +39,26 @@ func CookieAuthMiddleWare(ss *models.SessionService) func(next http.Handler) htt
 				http.Redirect(w, r, "/signin", http.StatusFound)
 				return
 			}
+			token := sessionCookie.Value
+			isRequireRedirect, isSessionFound := ss.CheckSessionExpired(token, time.Now())
+			if isRequireRedirect {
+				if isSessionFound {
+					err := ss.ExpireSessionByToken(token)
+					if err != nil {
+						//TODO: implement logging function for error
+						fmt.Println("error occured: ", err)
+					}
+				}
+				http.Redirect(w, r, "/signin", http.StatusFound)
+				return
+			}
+			refreshErr := ss.RefreshSession(token)
+			if refreshErr != nil {
+				//TODO: implement logging function for error
+				fmt.Println("error occured: ", refreshErr)
+			}
 
-			session, err := ss.ViaToken(sessionCookie.Value)
+			session, err := ss.ViaToken(token)
 			if err != nil {
 				http.Redirect(w, r, "/signin", http.StatusFound)
 			}
