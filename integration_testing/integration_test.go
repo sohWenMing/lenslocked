@@ -58,18 +58,19 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			createdUserIds := []int{}
+			defer func() {
+				models.CleanUpCreatedUserIds(createdUserIds, t, dbc)
+			}()
 			createdUser, err := dbc.UserService.CreateUser(test.userInfo)
 			createdUserIds = append(createdUserIds, createdUser.ID)
 			fmt.Println("createdUserIds: ", createdUserIds)
 			if err != nil {
 				t.Errorf("didn't expect error, got %v\n", err)
-				models.CleanUpCreatedUserIds(createdUserIds, t, dbc)
 				return
 			}
 			loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
 			if err != nil {
 				t.Errorf("didn't expect error, got %v\n", err)
-				models.CleanUpCreatedUserIds(createdUserIds, t, dbc)
 				return
 			}
 			sessionToken := loggedInUser.Session.Token
@@ -77,7 +78,6 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 			newRequest, err := http.NewRequest(http.MethodGet, "/test", nil)
 			if err != nil {
 				t.Errorf("didn't expect error, got %v\n", err)
-				models.CleanUpCreatedUserIds(createdUserIds, t, dbc)
 				return
 			}
 			newRequest.AddCookie(sessionCookie)
@@ -94,11 +94,9 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 			unMarshalErr := json.Unmarshal(buf.Bytes(), cookieAuthMWResult)
 			if unMarshalErr != nil {
 				t.Errorf("didn't expect error, got %v\n", err)
-				models.CleanUpCreatedUserIds(createdUserIds, t, dbc)
 				return
 			}
 			fmt.Println("cookieAuthMWResult: ", cookieAuthMWResult)
-			models.CleanUpCreatedUserIds(createdUserIds, t, dbc)
 		})
 
 	}
