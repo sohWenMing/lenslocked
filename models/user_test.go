@@ -83,7 +83,7 @@ func TestCreateUser(t *testing.T) {
 		})
 	}
 	// cleanup
-	cleanupCreatedUserIds(createdUserIds, t)
+	CleanUpCreatedUserIds(createdUserIds, t, dbc)
 }
 
 func TestLoginUser(t *testing.T) {
@@ -144,7 +144,7 @@ func TestLoginUser(t *testing.T) {
 		})
 	}
 	// cleanup
-	cleanupCreatedUserIds(createdUserIds, t)
+	CleanUpCreatedUserIds(createdUserIds, t, dbc)
 }
 
 func TestExpireSessionsByUserId(t *testing.T) {
@@ -191,7 +191,7 @@ func TestExpireSessionsByUserId(t *testing.T) {
 		})
 	}
 	// cleanup
-	cleanupCreatedUserIds(createdUserIds, t)
+	CleanUpCreatedUserIds(createdUserIds, t, dbc)
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -299,7 +299,7 @@ func TestLogoutUser(t *testing.T) {
 	}
 
 	// cleanup
-	cleanupCreatedUserIds(createdUserIds, t)
+	CleanUpCreatedUserIds(createdUserIds, t, dbc)
 }
 
 func TestRequireRedirect(t *testing.T) {
@@ -353,16 +353,6 @@ func TestRequireRedirect(t *testing.T) {
 		})
 	}
 	// cleanup
-	cleanupCreatedUserIds(createdUserIds, t)
-
-}
-
-func cleanupCreatedUserIds(createdUserIds []int, t *testing.T) {
-	for _, userId := range createdUserIds {
-		err := dbc.UserService.DeleteUserAndSession(userId)
-		if err != nil {
-			t.Errorf("didn't expect error, got %v\n", err)
-		}
-	}
+	CleanUpCreatedUserIds(createdUserIds, t, dbc)
 
 }

@@ -40,7 +40,7 @@ func main() {
 		views.BaseTemplateToData["faq.gohtml"]))
 
 	r.Route("/user", func(sr chi.Router) {
-		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService))
+		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil))
 		sr.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml",
 			views.BaseTemplateToData["persona_multiple.gohtml"]))
 	})

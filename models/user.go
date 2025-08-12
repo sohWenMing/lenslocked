@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/mail"
 	"strings"
+	"testing"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -137,6 +138,17 @@ func (us *UserService) DeleteUserAndSession(userId int) (err error) {
 }
 
 // ##### helpers #####
+func CleanUpCreatedUserIds(createdUserIds []int, t *testing.T, dbc *DBConnections) {
+	fmt.Println("CleanUpCreatedUserIds ran ")
+	fmt.Println("CreatedUserIds passed into CleanUpCreatedUserIds: ", createdUserIds)
+	for _, userId := range createdUserIds {
+		err := dbc.UserService.DeleteUserAndSession(userId)
+		if err != nil {
+			t.Errorf("didn't expect error, got %v\n", err)
+		}
+	}
+
+}
 func prepUserToPlainTextPassword(u UserToPlainTextPassword) UserToPlainTextPassword {
 	u.Email = strings.ToLower(u.Email)
 	return u

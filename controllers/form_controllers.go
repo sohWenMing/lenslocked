@@ -121,10 +121,13 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		cookie := mapCookie("sessionToken", loggedInUserInfo.Session.Token, "/", true)
+		cookie := MapSessionCookie(loggedInUserInfo.Session.Token)
 		http.SetCookie(w, cookie)
 		http.Redirect(w, r, "/user/about", http.StatusFound)
 	}
+}
+func MapSessionCookie(token string) *http.Cookie {
+	return mapCookie("sessionToken", token, "/", true)
 }
 
 func mapCookie(name, value, path string, HTTPOnly bool) *http.Cookie {
