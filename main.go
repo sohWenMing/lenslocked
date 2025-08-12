@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -40,7 +41,7 @@ func main() {
 		views.BaseTemplateToData["faq.gohtml"]))
 
 	r.Route("/user", func(sr chi.Router) {
-		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil))
+		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, time.Now()))
 		sr.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml",
 			views.BaseTemplateToData["persona_multiple.gohtml"]))
 	})

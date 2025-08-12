@@ -88,18 +88,23 @@ func (ss *SessionService) ExpireSessionByToken(token string) error {
 	return nil
 }
 
-func (ss *SessionService) RefreshSession(token string) error {
+func (ss *SessionService) RefreshSession(token string, requestTime time.Time) (returnedSession *Session, err error) {
 	tokenHash := HashSessionToken(token)
-	newExpiry := time.Now().UTC().Add(15 * time.Minute)
-	_, err := ss.db.Exec(`
+	newExpiry := requestTime.Add(15 * time.Minute)
+	row := ss.db.QueryRow(`
 	UPDATE sessions
 	Set expires_on=($1)
 	WHERE token_hash=($2)
+	returning id, user_id, token_hash
 	`, newExpiry, tokenHash)
+	var session Session
+	err = row.Scan(&session.ID, &session.UserID, &session.TokenHash)
 	if err != nil {
-		return err
+		//TODO - implement logging later
+		fmt.Println("err in refreshSession: ", err)
+		return &Session{}, HandlePgError(err)
 	}
-	return nil
+	return &session, nil
 
 }
 
@@ -129,6 +134,12 @@ func (ss *SessionService) DeleteAllSessionsTokensByUserId(userID int) (err error
 	return nil
 }
 
+/*
+checks whether the session can be found in the database, and whether or not it has expired.
+If the session cannot be found, will return isRequiredRedirect == true, isSessionFound == false
+If session can be found, but it has expired, will return isRequireRedirect == true, isSessionFound == true
+Else - will return isRequireRedirect == false, isSessionFound == True
+*/
 func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time) (isRequireRedirect bool, isSessionFound bool) {
 	type hashExpiryStruct struct {
 		id        int
@@ -154,23 +165,6 @@ func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time
 		return true, true
 	}
 	return false, true
-}
-
-// ViaToken retrieves the session that is tied to the session token sent with the request
-func (ss *SessionService) ViaToken(token string) (*Session, error) {
-	hash := HashSessionToken(token)
-	row := ss.db.QueryRow(`
-	SELECT id, user_id, token_hash 
-	FROM sessions
-	WHERE token_hash =($1);
-	`, hash)
-	var session Session
-	// if any error occurs, then we take it that either no row was returned or there was an error, so we need to redirect
-	err := row.Scan(&session.ID, &session.UserID, &session.TokenHash)
-	if err != nil {
-		return nil, err
-	}
-	return &session, nil
 }
 
 func VerifySessionToken(token string, hash string) (isVerified bool, err error) {

@@ -139,8 +139,6 @@ func (us *UserService) DeleteUserAndSession(userId int) (err error) {
 
 // ##### helpers #####
 func CleanUpCreatedUserIds(createdUserIds []int, t *testing.T, dbc *DBConnections) {
-	fmt.Println("CleanUpCreatedUserIds ran ")
-	fmt.Println("CreatedUserIds passed into CleanUpCreatedUserIds: ", createdUserIds)
 	for _, userId := range createdUserIds {
 		err := dbc.UserService.DeleteUserAndSession(userId)
 		if err != nil {

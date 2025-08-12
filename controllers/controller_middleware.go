@@ -18,9 +18,15 @@ type CookieAuthMWResult struct {
 	IsRedirectFromCheckSessionExpired bool
 	IsSessionFound                    bool
 	IsErrOnExpireSessionByToken       bool
+	IsTokenSetToExpired               bool
 	IsErrOnRefreshSession             bool
-	IsErrOnViaToken                   bool
+	IsTokenSetToRefreshed             bool
 	UserIdFromSession                 int
+}
+
+func (mwr *CookieAuthMWResult) PrettyJSON() string {
+	bytes, _ := json.MarshalIndent(*mwr, "", "    ")
+	return string(bytes)
 }
 
 func (mwr *CookieAuthMWResult) SetIsRedirectFromGetSessionCookie(input bool) {
@@ -32,14 +38,17 @@ func (mwr *CookieAuthMWResult) SetIsRedirectFromCheckSessionExpired(input bool) 
 func (mwr *CookieAuthMWResult) SetIsSessionFound(input bool) {
 	mwr.IsSessionFound = input
 }
+func (mwr *CookieAuthMWResult) SetIsTokenSetToExpired(input bool) {
+	mwr.IsTokenSetToExpired = input
+}
 func (mwr *CookieAuthMWResult) SetIssErrOnExpireSessionByToken(input bool) {
 	mwr.IsErrOnExpireSessionByToken = input
 }
 func (mwr *CookieAuthMWResult) SetIsErrorOnRefreshSession(input bool) {
 	mwr.IsErrOnRefreshSession = input
 }
-func (mwr *CookieAuthMWResult) SetIsErrOnViaToken(input bool) {
-	mwr.IsErrOnViaToken = input
+func (mwr *CookieAuthMWResult) SetIsTokenSetToRefreshed(input bool) {
+	mwr.IsTokenSetToRefreshed = input
 }
 func (mwr *CookieAuthMWResult) SetUserIdFromSession(userId int) {
 	mwr.UserIdFromSession = userId
@@ -71,14 +80,17 @@ Function checks for the existence of a session cookie, if does not exist, will r
 writer passed in is to allow flexibility for capturing values during testing, in actual running code
 should be set to nil
 */
-func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer) func(next http.Handler) http.Handler {
+func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, expiry time.Time) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
+		requestTime := time.Now().UTC()
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			//cookieAuthMWTResult used to record what happened in the middleware, used for testing purposes to write to writer
 			cookieAuthMWRResult := &CookieAuthMWResult{}
 			if writer != nil {
 				defer cookieAuthMWRResult.WriteToWriter(writer)
 			}
-
+			//checks for existence of session token in the cookies from the requesst
 			token, isRequireRedirect := getSessionCookieFromRequest(r)
 
 			//for testing - writes to the cookieAuthMWRResult
@@ -88,7 +100,8 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer) func(next
 				http.Redirect(w, r, "/signin", http.StatusFound)
 				return
 			}
-			isRequireRedirect, isSessionFound := ss.CheckSessionExpired(token, time.Now())
+			isRequireRedirect, isSessionFound := ss.CheckSessionExpired(token, expiry)
+			cookieAuthMWRResult.SetIsSessionFound(isSessionFound)
 
 			//for testing - writes to the cookieAuthMWRResult
 			cookieAuthMWRResult.SetIsRedirectFromCheckSessionExpired(isRequireRedirect)
@@ -100,22 +113,21 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer) func(next
 						cookieAuthMWRResult.SetIssErrOnExpireSessionByToken(true)
 						//TODO: implement logging function for error
 						fmt.Println("error occured: ", err)
+					} else {
+						cookieAuthMWRResult.SetIsTokenSetToExpired(true)
 					}
 				}
 				http.Redirect(w, r, "/signin", http.StatusFound)
 				return
 			}
-			refreshErr := ss.RefreshSession(token)
+			session, refreshErr := ss.RefreshSession(token, requestTime)
 			if refreshErr != nil {
 				cookieAuthMWRResult.SetIsErrorOnRefreshSession(true)
 				//TODO: implement logging function for error
 				fmt.Println("error occured: ", refreshErr)
-			}
-
-			session, err := ss.ViaToken(token)
-			if err != nil {
-				cookieAuthMWRResult.SetIsErrOnViaToken(true)
 				http.Redirect(w, r, "/signin", http.StatusFound)
+			} else {
+				cookieAuthMWRResult.SetIsTokenSetToRefreshed(true)
 			}
 			cookieAuthMWRResult.SetUserIdFromSession(session.UserID)
 			ctx := context.WithValue(r.Context(), "userId", session.UserID)
