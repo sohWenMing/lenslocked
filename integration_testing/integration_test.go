@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,6 +20,20 @@ import (
 
 var isDev = false
 var dbc *models.DBConnections
+
+type safeCounter struct {
+	counter int
+	mu      sync.Mutex
+}
+
+func (s *safeCounter) getIncrementedCounter() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.counter++
+	return s.counter
+}
+
+var emailCounter = safeCounter{}
 
 func TestMain(m *testing.M) {
 	envVars, err := models.LoadEnv("../.env")
@@ -52,6 +67,11 @@ type cookieAuthMWTest struct {
 	isTEstRedirectFromCheckSessionExpired bool
 	expiry                                time.Time
 	userInfo                              models.UserToPlainTextPassword
+}
+
+func (c *cookieAuthMWTest) createUniqueEmail() {
+	emailCounter := emailCounter.getIncrementedCounter()
+	c.userInfo.Email = fmt.Sprintf("%s%d", c.userInfo.Email, emailCounter)
 }
 
 func evalCookieAuthMWResult(
@@ -108,6 +128,7 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			test.createUniqueEmail()
 			//init
 			createdUserIds := []int{}
 			// cleanup action wrapped in closure, so that eval of createdUserIds will be delayed until actual end of overall function call
@@ -116,6 +137,7 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 			}()
 
 			//setup - create and login the user, so that we can get the session token to add as a cookie into the request
+
 			createUserShouldReturn := createUser(t, test.userInfo, &createdUserIds)
 			if createUserShouldReturn {
 				return
@@ -174,6 +196,7 @@ func evalProcessSIgnOutTest(test processSignOutTest,
 		test.expected.IsRedirectBecauseNoSession = true
 	} else {
 		test.expected.IsRedirectAfterExpiringSessionToken = true
+		test.expected.IsSetExpireSessionCookie = true
 	}
 	if !reflect.DeepEqual(test.expected, result) {
 		t.Errorf("got %s\n want %s\n", helpers.PrettyJSON(result),
@@ -203,7 +226,7 @@ func TestProcessSignOut(t *testing.T) {
 			defer func() {
 				models.CleanUpCreatedUserIds(createdUserIds, t, dbc)
 			}()
-			userInfo := models.UserToPlainTextPassword{Email: "hello@test.com",
+			userInfo := models.UserToPlainTextPassword{Email: fmt.Sprintf("hello@test.com%d", emailCounter.getIncrementedCounter()),
 				PlainTextPassword: "Holoq123holoq123"}
 			shouldReturn := createUser(t, userInfo, &createdUserIds)
 			if shouldReturn {

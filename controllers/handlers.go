@@ -55,6 +55,7 @@ type ProcessSignoutResult struct {
 	IsRedirectBecauseNoSession          bool
 	IsErrOnExpireSessionToken           bool
 	IsRedirectAfterExpiringSessionToken bool
+	IsSetExpireSessionCookie            bool
 }
 
 func (p *ProcessSignoutResult) SetIsRedirectBecauseNoSession(bool) {
@@ -66,7 +67,11 @@ func (p *ProcessSignoutResult) SetIsErrOnExpireSessionToken(bool) {
 func (p *ProcessSignoutResult) SetIsRedirectAfterExpiringSessionToken(bool) {
 	p.IsRedirectAfterExpiringSessionToken = true
 }
+func (p *ProcessSignoutResult) SetIsSetExpireSessionCookie(bool) {
+	p.IsSetExpireSessionCookie = true
+}
 
+// Processes a sign out request - writer that is passed in should be used for testing purposes. Set nil to writer for actual application
 func ProcessSignOut(ss *models.SessionService, writer io.Writer) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var result ProcessSignoutResult
@@ -80,6 +85,8 @@ func ProcessSignOut(ss *models.SessionService, writer io.Writer) http.HandlerFun
 				http.Redirect(w, r, "/signin", http.StatusFound)
 				return
 			}
+			SetExpireSessionCookieToResponseWriter(token, w)
+			result.SetIsSetExpireSessionCookie(true)
 			tokenHash := models.HashSessionToken(token)
 			err := ss.ExpireSessionByToken(tokenHash)
 			if err != nil {
