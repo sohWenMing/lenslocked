@@ -28,6 +28,10 @@ type SessionService struct {
 	db *sql.DB
 }
 
+/*
+Will expire all sessions related to the userId that is passed on - and then create a new session and return.
+If error occurs, session returned will be nil
+*/
 func (ss *SessionService) ExpirePreviousSessionsAndCreateNewSessionByUserId(userID int) (session *Session, err error) {
 	err = ss.ExpireSessionsTokensByUserId(userID)
 	if err != nil {

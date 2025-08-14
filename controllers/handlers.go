@@ -3,9 +3,12 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/sohWenMing/lenslocked/helpers"
+	"github.com/sohWenMing/lenslocked/models"
 )
 
 func HandlerExecuteTemplate(template ExecutorTemplate, fileName string, data any) http.HandlerFunc {
@@ -46,4 +49,46 @@ func TestSendCookie(w http.ResponseWriter, r *http.Request) {
 	returnedString := fmt.Sprintf("name: %s value: %s", cookie.Name, cookie.Value)
 	fmt.Fprint(w, returnedString)
 	fmt.Fprintf(w, "Headers %v\n", r.Header)
+}
+
+type ProcessSignoutResult struct {
+	IsRedirectBecauseNoSession          bool
+	IsErrOnExpireSessionToken           bool
+	IsRedirectAfterExpiringSessionToken bool
+}
+
+func (p *ProcessSignoutResult) SetIsRedirectBecauseNoSession(bool) {
+	p.IsRedirectBecauseNoSession = true
+}
+func (p *ProcessSignoutResult) SetIsErrOnExpireSessionToken(bool) {
+	p.IsErrOnExpireSessionToken = true
+}
+func (p *ProcessSignoutResult) SetIsRedirectAfterExpiringSessionToken(bool) {
+	p.IsRedirectAfterExpiringSessionToken = true
+}
+
+func ProcessSignOut(ss *models.SessionService, writer io.Writer) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var result ProcessSignoutResult
+		if writer != nil {
+			defer func() {
+				helpers.WriteToWriter(writer, result)
+			}()
+			token, isMustRedirect := GetSessionCookieFromRequest(r)
+			if isMustRedirect {
+				result.SetIsRedirectBecauseNoSession(true)
+				http.Redirect(w, r, "/signin", http.StatusFound)
+				return
+			}
+			tokenHash := models.HashSessionToken(token)
+			err := ss.ExpireSessionByToken(tokenHash)
+			if err != nil {
+				result.SetIsErrOnExpireSessionToken(true)
+				// TODO: implement logging function
+				fmt.Println(err)
+			}
+			result.SetIsRedirectAfterExpiringSessionToken(true)
+			http.Redirect(w, r, "/signin", http.StatusFound)
+		}
+	})
 }

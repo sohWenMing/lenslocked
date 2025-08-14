@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/csrf"
+	"github.com/sohWenMing/lenslocked/helpers"
 	"github.com/sohWenMing/lenslocked/models"
 )
 
@@ -22,11 +22,6 @@ type CookieAuthMWResult struct {
 	IsErrOnRefreshSession             bool
 	IsTokenSetToRefreshed             bool
 	UserIdFromSession                 int
-}
-
-func (mwr *CookieAuthMWResult) PrettyJSON() string {
-	bytes, _ := json.MarshalIndent(*mwr, "", "    ")
-	return string(bytes)
 }
 
 func (mwr *CookieAuthMWResult) SetIsRedirectFromGetSessionCookie(input bool) {
@@ -52,14 +47,6 @@ func (mwr *CookieAuthMWResult) SetIsTokenSetToRefreshed(input bool) {
 }
 func (mwr *CookieAuthMWResult) SetUserIdFromSession(userId int) {
 	mwr.UserIdFromSession = userId
-}
-
-func (mwr *CookieAuthMWResult) WriteToWriter(w io.Writer) {
-	w.Write(mwr.ToJSONBytes())
-}
-func (mwr *CookieAuthMWResult) ToJSONBytes() []byte {
-	jsonBytes, _ := json.Marshal(mwr)
-	return jsonBytes
 }
 
 func CSRFProtect(isDev bool, secretKey string) func(http.Handler) http.Handler {
@@ -88,10 +75,10 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, expiry ti
 			//cookieAuthMWTResult used to record what happened in the middleware, used for testing purposes to write to writer
 			cookieAuthMWRResult := &CookieAuthMWResult{}
 			if writer != nil {
-				defer cookieAuthMWRResult.WriteToWriter(writer)
+				defer helpers.WriteToWriter(writer, cookieAuthMWRResult)
 			}
 			//checks for existence of session token in the cookies from the requesst
-			token, isRequireRedirect := getSessionCookieFromRequest(r)
+			token, isRequireRedirect := GetSessionCookieFromRequest(r)
 
 			//for testing - writes to the cookieAuthMWRResult
 			cookieAuthMWRResult.SetIsRedirectFromGetSessionCookie(isRequireRedirect)
@@ -135,18 +122,6 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, expiry ti
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func getSessionCookieFromRequest(r *http.Request) (token string, isMustRedirect bool) {
-	sessionCookie, err := r.Cookie("sessionToken")
-	if err != nil {
-		return "", true
-	}
-	if sessionCookie.Value == "" {
-		return "", true
-	}
-	token = sessionCookie.Value
-	return token, false
 }
 
 // the middleware takes in the next handler - so if everything passes then it will delegate on to the next handler

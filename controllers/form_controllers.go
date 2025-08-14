@@ -121,11 +121,24 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		cookie := MapSessionCookie(loggedInUserInfo.Session.Token)
-		http.SetCookie(w, cookie)
+		sessionToken := loggedInUserInfo.Session.Token
+		SetSessionCookietoResponseWriter(sessionToken, w)
 		http.Redirect(w, r, "/user/about", http.StatusFound)
 	}
 }
+
+/*
+maps a cookie based on the session token that is created when a user logs in, and attaches it to a
+http.ResponseWriter so cookie will be send in the response
+*/
+func SetSessionCookietoResponseWriter(sessionToken string, w http.ResponseWriter) {
+	fmt.Println("Set SessionCookietoResponseWriter ran")
+
+	cookie := MapSessionCookie(sessionToken)
+	fmt.Println("cookie: ", cookie)
+	http.SetCookie(w, cookie)
+}
+
 func MapSessionCookie(token string) *http.Cookie {
 	return mapCookie("sessionToken", token, "/", true)
 }

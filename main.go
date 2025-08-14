@@ -50,6 +50,7 @@ func main() {
 	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))
 	r.Get("/test_cookie", controllers.HandlerExecuteTemplate(template, "test_cookie.gohtml", views.BaseTemplateToData["test_cookie.gohtml"]))
 	r.Get("/send_cookie", controllers.TestSendCookie)
+	r.Get("/signout", controllers.ProcessSignOut(dbc.SessionService, nil))
 
 	r.Get("/", controllers.HandlerExecuteTemplate(template, "home.gohtml", nil))
 	// ##### POST Method Handlers #####
