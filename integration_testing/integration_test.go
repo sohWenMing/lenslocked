@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/sohWenMing/lenslocked/controllers"
 	"github.com/sohWenMing/lenslocked/helpers"
@@ -64,8 +63,7 @@ func TestEnvLoading(t *testing.T) {
 type cookieAuthMWTest struct {
 	name                                  string
 	isTestBlankCookieInRequest            bool
-	isTEstRedirectFromCheckSessionExpired bool
-	expiry                                time.Time
+	isTestRedirectFromCheckSessionExpired bool
 	userInfo                              models.UserToPlainTextPassword
 }
 
@@ -85,7 +83,7 @@ func evalCookieAuthMWResult(
 	if test.isTestBlankCookieInRequest {
 		expected.SetIsRedirectFromGetSessionCookie(true)
 		//TODO: Handle this case later
-	} else if test.isTEstRedirectFromCheckSessionExpired {
+	} else if test.isTestRedirectFromCheckSessionExpired {
 		expected.SetIsTokenSetToExpired(true)
 		expected.SetIsRedirectFromCheckSessionExpired(true)
 		expected.SetIsSessionFound(true)
@@ -108,21 +106,18 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 			"happy flow",
 			false,
 			false,
-			time.Now(),
 			models.UserToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
 		},
 		{
 			"test redirect from no session found",
 			true,
 			false,
-			time.Now(),
 			models.UserToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
 		},
 		{
 			"test redirect from expired session",
 			false,
 			true,
-			time.Now().Add(60 * time.Minute),
 			models.UserToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
 		},
 	}
@@ -158,7 +153,7 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 				reqeuest setup in the test
 			*/
 			buf := &bytes.Buffer{}
-			mw := controllers.CookieAuthMiddleWare(dbc.SessionService, buf, test.expiry)
+			mw := controllers.CookieAuthMiddleWare(dbc.SessionService, buf, test.isTestRedirectFromCheckSessionExpired)
 			wrappedHandler := mw(testHandler)
 
 			newRequest, err := http.NewRequest(http.MethodGet, "/test", nil)
@@ -249,10 +244,10 @@ func TestProcessSignOut(t *testing.T) {
 			}
 			responseRecorder := httptest.NewRecorder()
 			buf := &bytes.Buffer{}
-			controllers.ProcessSignOut(dbc.SessionService, buf)(responseRecorder, req)
+			controllers.HandlerSignOut(dbc.SessionService, buf)(responseRecorder, req)
 
 			var processSignOutResult controllers.ProcessSignoutResult
-			err = json.Unmarshal(buf.Bytes(), &processSignOutResult)
+			_ = json.Unmarshal(buf.Bytes(), &processSignOutResult)
 			evalProcessSIgnOutTest(test, processSignOutResult, t)
 		})
 	}

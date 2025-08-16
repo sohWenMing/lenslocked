@@ -1,0 +1,20 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Go Server",
+            // name is just a human readable nickname for this configuration
+            "type": "go",
+            // when vscode sees "go" it knows to find and run Delve, which is the debugging program that is used to connect go code to vscode for debugging
+            "request": "launch",
+            // tells the debugger "I want to start my program from the beginning, and attach yourself to it immediately
+            "mode": "auto",
+            // just tells the Go extension to figure out the best way to run the code - will rarely be changed
+            "program": "${workspaceFolder}"
+            // points the debugger to the folder of the project 
+        }
+    ]
+}

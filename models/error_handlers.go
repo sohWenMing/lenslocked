@@ -38,10 +38,7 @@ Handles case where no rows are returned from query, but by design it's not an er
 Returns true if no rows are found
 */
 func CheckIsNoRowsErr(err error) bool {
-	if errors.Is(err, sql.ErrNoRows) {
-		return true
-	}
-	return false
+	return errors.Is(err, sql.ErrNoRows)
 }
 
 func HandlePgError(err error) error {

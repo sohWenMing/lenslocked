@@ -21,6 +21,14 @@
                 </div>
 
                 <div class="space-x-4">
+                {{ if .UserId }}
+                    <form action="/signout" method="post" class="inline p-4">
+                    <div class="hidden">
+                        {{csrfField}}
+                    </div>
+                    <button type="submit">Sign out</button>
+                    </form>
+                {{ end }}
                     <a href="/signin">Sign in </a>
                     <a class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded" href="/signup">Sign up</a>
                 </div>
@@ -85,3 +93,4 @@
         type="submit">{{ .ButtonText }}
     </button>
 {{ end }}
+{{/* ############## Button End ######################3 */}}

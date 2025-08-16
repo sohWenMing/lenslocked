@@ -55,15 +55,21 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 		return nil, err
 	}
 	hashedToken := HashSessionToken(newToken)
+	expiresOn := time.Now().Add(15 * time.Minute).UTC()
+
 	row := ss.db.QueryRow(`
-	INSERT into sessions(user_id, token_hash)
-	VALUES($1, $2)
-	returning id, user_id, token_hash;
-	`, userID, hashedToken)
+	INSERT into sessions(user_id, token_hash, expires_on)
+	VALUES($1, $2, $3)
+	returning id, user_id, token_hash, expires_on;
+	`, userID, hashedToken, expiresOn)
+
 	returnedSession := &Session{}
 	returnedSession.Token = newToken
-	err = row.Scan(&returnedSession.ID, &returnedSession.UserID, &returnedSession.TokenHash)
+
+	var returnedExpiresOn time.Time
+	err = row.Scan(&returnedSession.ID, &returnedSession.UserID, &returnedSession.TokenHash, &returnedExpiresOn)
 	if err != nil {
+		fmt.Println("Error during row.Scan()", err)
 		return nil, err
 	}
 	return returnedSession, nil
@@ -162,8 +168,8 @@ func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time
 		return true, false
 
 	}
-	fmt.Println("expiresOn: ", hashExpiry.expiresOn.UTC())
-	fmt.Println("cutOffTime: ", cutOffTime.UTC())
+	fmt.Println("expiresOn from hashExpiryStruct: ", hashExpiry.expiresOn)
+	fmt.Println("cutOffTime passed in: ", cutOffTime)
 
 	if hashExpiry.expiresOn.UTC().Before(cutOffTime.UTC()) {
 		return true, true

@@ -36,7 +36,7 @@ func LoadEnv(path string) (envVars EnvVars, err error) {
 func getEnvVar(input string) (envVarString string, err error) {
 	envVarString = os.Getenv(helpers.TrimSpaceToUpper(input))
 	if envVarString == "" {
-		return "", fmt.Errorf("Env var with name %s could not be found\n", input)
+		return "", fmt.Errorf("env var with name %s could not be found", input)
 	}
 	return envVarString, nil
 

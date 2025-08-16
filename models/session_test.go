@@ -67,6 +67,9 @@ func TestVerifySessionToken(t *testing.T) {
 	}
 	initialHash := HashSessionToken(token)
 	isVerified, err := VerifySessionToken(token, initialHash)
+	if err != nil {
+		t.Errorf("didn't expect err, got %v\n", err)
+	}
 	if !isVerified {
 		t.Errorf("got %t, want %t", isVerified, true)
 	}

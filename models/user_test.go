@@ -8,7 +8,6 @@ import (
 )
 
 var dbc *DBConnections
-var userService UserService
 
 func TestMain(m *testing.M) {
 	databaseConnection, err := InitDBConnections()
@@ -336,6 +335,10 @@ func TestRequireRedirect(t *testing.T) {
 			}
 			createdUserIds = append(createdUserIds, createdUser.ID)
 			loggedInUser, err := dbc.UserService.LoginUser(test.userInfo)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v\n", err)
+				return
+			}
 			token := loggedInUser.Token
 			var isRequireRedirect bool
 

@@ -108,6 +108,11 @@ func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *
 	return mapInternalUserToReturnedUser(internalUser), nil
 }
 
+func (us *UserService) LogoutUserByToken(token string) error {
+	//TODO - implement method
+	return nil
+}
+
 func (us *UserService) LogoutUser(userId int) (err error) {
 	err = us.SessionService.ExpireSessionsTokensByUserId(userId)
 	if err != nil {
@@ -164,10 +169,7 @@ func validateInputs(email, password string) error {
 
 func isValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func isValidPassword(password string) bool {

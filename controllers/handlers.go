@@ -9,13 +9,47 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/sohWenMing/lenslocked/helpers"
 	"github.com/sohWenMing/lenslocked/models"
+	"github.com/sohWenMing/lenslocked/views"
 )
 
-func HandlerExecuteTemplate(template ExecutorTemplate, fileName string, data any) http.HandlerFunc {
+func HandlerExecuteTemplate(template ExecutorTemplateWithCSRF, fileName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userId, isFound := GetUserIdFromRequestContext(r)
+		if !isFound {
+			fmt.Println("userId not found")
+		} else {
+			fmt.Println("userId: ", userId)
+		}
+		otherPageData, err := views.BaseTemplatesToData.GetDataForTemplate(fileName)
+		if err != nil {
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
+		pageData := views.PageData{
+			UserId:    userId,
+			OtherData: otherPageData,
+		}
+		if fileName == "signup.gohtml" || fileName == "sign.gohtml" {
+			signInSignUpFormData, ok := otherPageData.(views.SignInSignUpForm)
+			if !ok {
+				http.Error(w, "Bad request", http.StatusBadRequest)
+				return
+			}
+			updatedSignInSignUpFormData := setSignInSignUpFormData(r, signInSignUpFormData)
+			pageData.OtherData = updatedSignInSignUpFormData
+		}
+
+		fmt.Println("pageData: ", pageData)
+
+		csrfToken := GetCSRFTokenFromRequest(r)
 		w.Header().Set("content-type", "text/html")
-		template.ExecTemplate(w, r, fileName, data)
+		template.ExecTemplateWithCSRF(w, r, csrfToken, fileName, pageData)
 	}
+}
+
+func setSignInSignUpFormData(r *http.Request, signInSignUpFormData views.SignInSignUpForm) views.SignInSignUpForm {
+	signInSignUpFormData.SetEmailValue(r.FormValue("email"))
+	return signInSignUpFormData
 }
 
 func GetUrlParam(r *http.Request, param string) (returnedString string, err error) {
@@ -72,30 +106,29 @@ func (p *ProcessSignoutResult) SetIsSetExpireSessionCookie(bool) {
 }
 
 // Processes a sign out request - writer that is passed in should be used for testing purposes. Set nil to writer for actual application
-func ProcessSignOut(ss *models.SessionService, writer io.Writer) http.HandlerFunc {
+func HandlerSignOut(ss *models.SessionService, writer io.Writer) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var result ProcessSignoutResult
 		if writer != nil {
 			defer func() {
 				helpers.WriteToWriter(writer, result)
 			}()
-			token, isMustRedirect := GetSessionCookieFromRequest(r)
-			if isMustRedirect {
-				result.SetIsRedirectBecauseNoSession(true)
-				http.Redirect(w, r, "/signin", http.StatusFound)
-				return
-			}
-			SetExpireSessionCookieToResponseWriter(token, w)
-			result.SetIsSetExpireSessionCookie(true)
-			tokenHash := models.HashSessionToken(token)
-			err := ss.ExpireSessionByToken(tokenHash)
-			if err != nil {
-				result.SetIsErrOnExpireSessionToken(true)
-				// TODO: implement logging function
-				fmt.Println(err)
-			}
-			result.SetIsRedirectAfterExpiringSessionToken(true)
-			http.Redirect(w, r, "/signin", http.StatusFound)
 		}
+		token, isMustRedirect := GetSessionCookieFromRequest(r)
+		if isMustRedirect {
+			result.SetIsRedirectBecauseNoSession(true)
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+		SetExpireSessionCookieToResponseWriter(token, w)
+		result.SetIsSetExpireSessionCookie(true)
+		err := ss.ExpireSessionByToken(token)
+		if err != nil {
+			result.SetIsErrOnExpireSessionToken(true)
+			// TODO: implement logging function
+			fmt.Println(err)
+		}
+		result.SetIsRedirectAfterExpiringSessionToken(true)
+		http.Redirect(w, r, "/signin", http.StatusFound)
 	})
 }
