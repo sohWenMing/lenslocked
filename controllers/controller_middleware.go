@@ -67,14 +67,14 @@ func GetCSRFTokenFromRequest(r *http.Request) template.HTML {
 }
 
 /*
-ProtectedCookieAuthMiddleWare returns a middleware that checks for the existence of a session cookie.
+CookieAuthMiddleWare returns a middleware that checks for the existence of a session cookie.
 If a session cookie is not found, then it will redirect user to the sign in page
 if a session cookie is found but it is expired, will redirect user to to login page after expiring the session, setting isExpired to true in database
 If a session coookie is found but not expired, will refresh the session adding 15 minutes
 Writer passed in is used to record results from the middleware to be used for testing purposes, can set to nil for actual usage
 isTestExpiry bool is used for testing purposes, can set to nil for actual usage
 */
-func ProtectedCookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isTextExpiry bool) func(next http.Handler) http.Handler {
+func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isTextExpiry bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			requestTime := time.Now().UTC()
@@ -136,7 +136,10 @@ func ProtectedCookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, 
 	}
 }
 
-func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isTextExpiry bool) func(next http.Handler) http.Handler {
+// the middleware takes in the next handler - so if everything passes then it will delegate on to the next handler
+// if .Use is set from the router, then it will when delegate to the router's handler
+
+func CookieAuthMiddleWareTest(ss *models.SessionService, writer io.Writer, isRedirect bool, isTextExpiry bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			requestTime := time.Now().UTC()
@@ -152,23 +155,23 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isTextExp
 			if writer != nil {
 				defer helpers.WriteToWriter(writer, cookieAuthMWRResult)
 			}
-			token, isRequireRedirect := GetSessionCookieFromRequest(r)
+			token, isFound := GetSessionCookieFromRequest(r)
 
 			//for testing - writes to the cookieAuthMWRResult
-			cookieAuthMWRResult.SetIsCookieFoundFromGetSessionCookie(isRequireRedirect)
+			cookieAuthMWRResult.SetIsCookieFoundFromGetSessionCookie(isFound)
 
-			if isRequireRedirect {
+			if !isFound && isRedirect {
 				http.Redirect(w, r, "/signin", http.StatusFound)
 				return
 			}
-			isRequireRedirect, isSessionFound := ss.CheckSessionExpired(token, requestTime)
-			cookieAuthMWRResult.SetIsSessionFoundInDatabase(isSessionFound)
+			isSessionExpired, IsSessionFoundInDatabase := ss.CheckSessionExpired(token, requestTime)
+			cookieAuthMWRResult.SetIsSessionFoundInDatabase(IsSessionFoundInDatabase)
 
 			//for testing - writes to the cookieAuthMWRResult
-			cookieAuthMWRResult.SetIsRedirectFromCheckSessionExpired(isRequireRedirect)
+			cookieAuthMWRResult.SetIsRedirectFromCheckSessionExpired(isSessionExpired)
 
-			if isRequireRedirect {
-				if isSessionFound {
+			if isSessionExpired {
+				if IsSessionFoundInDatabase {
 					err := ss.ExpireSessionByToken(token)
 					if err != nil {
 						cookieAuthMWRResult.SetIssErrOnExpireSessionByToken(true)
@@ -178,8 +181,10 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isTextExp
 						cookieAuthMWRResult.SetIsTokenSetToExpired(true)
 					}
 				}
-				http.Redirect(w, r, "/signin", http.StatusFound)
-				return
+				if isRedirect {
+					http.Redirect(w, r, "/signin", http.StatusFound)
+					return
+				}
 			}
 			session, refreshErr := ss.RefreshSession(token, requestTime)
 			if refreshErr != nil {
@@ -197,10 +202,6 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isTextExp
 		})
 	}
 }
-
-// the middleware takes in the next handler - so if everything passes then it will delegate on to the next handler
-// if .Use is set from the router, then it will when delegate to the router's handler
-
 func GetUserIdKey() contextKey {
 	return userIdKey
 }

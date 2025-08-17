@@ -114,8 +114,8 @@ func HandlerSignOut(ss *models.SessionService, writer io.Writer) http.HandlerFun
 				helpers.WriteToWriter(writer, result)
 			}()
 		}
-		token, isMustRedirect := GetSessionCookieFromRequest(r)
-		if isMustRedirect {
+		token, isFound := GetSessionCookieFromRequest(r)
+		if !isFound {
 			result.SetIsRedirectBecauseNoSession(true)
 			http.Redirect(w, r, "/signin", http.StatusFound)
 			return

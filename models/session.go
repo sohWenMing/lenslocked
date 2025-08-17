@@ -160,8 +160,9 @@ func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time
 	row := ss.db.QueryRow(`
 		SELECT id, expires_on
 		FROM sessions
-		WHERE token_hash=($1);
-	`, tokenHash)
+		WHERE token_hash=($1)
+		AND is_expired=($2);
+	`, tokenHash, false)
 	// if any error occurs, then we take it that either no row was returned or there was an error, so we need to redirect
 	if err := row.Scan(&hashExpiry.id, &hashExpiry.expiresOn); err != nil {
 		fmt.Println("err occured: ", err)

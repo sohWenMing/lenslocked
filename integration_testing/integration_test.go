@@ -173,7 +173,7 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 				reqeuest setup in the test
 			*/
 			buf := &bytes.Buffer{}
-			mw := controllers.ProtectedCookieAuthMiddleWare(dbc.SessionService, buf, test.isTestRedirectFromCheckSessionExpired)
+			mw := controllers.CookieAuthMiddleWare(dbc.SessionService, buf, test.isTestRedirectFromCheckSessionExpired)
 			wrappedHandler := mw(testHandler)
 
 			newRequest, err := http.NewRequest(http.MethodGet, "/test", nil)
