@@ -75,30 +75,50 @@ func (c *cookieAuthMWTest) createUniqueEmail() {
 func evalCookieAuthMWResult(
 	loggedInUserId int,
 	test cookieAuthMWTest,
-	cookieAuthMWRequestIn *controllers.CookieAuthMWResult,
+	cookieAuthMWResultIn *controllers.CookieAuthMWResult,
 	t *testing.T) {
 	//init working expected result
-	expected := &controllers.CookieAuthMWResult{}
-
-	if test.isTestBlankCookieInRequest {
-		expected.SetIsRedirectFromGetSessionCookie(true)
-		//TODO: Handle this case later
-	} else if test.isTestRedirectFromCheckSessionExpired {
-		expected.SetIsTokenSetToExpired(true)
-		expected.SetIsRedirectFromCheckSessionExpired(true)
-		expected.SetIsSessionFound(true)
-
-	} else {
-		expected.SetIsSessionFound(true)
-		expected.SetIsTokenSetToRefreshed(true)
-		expected.SetUserIdFromSession(loggedInUserId)
-	}
-	if !reflect.DeepEqual(cookieAuthMWRequestIn, expected) {
-		t.Errorf("got %v, want %v\n", cookieAuthMWRequestIn, expected)
+	expected := mapExpectedCookieAuthMWResult(test, loggedInUserId)
+	if !reflect.DeepEqual(cookieAuthMWResultIn, expected) {
+		t.Errorf("got %v\n, want %v\n", helpers.PrettyJSON(cookieAuthMWResultIn), helpers.PrettyJSON(expected))
 		return
 	}
-
 }
+
+func mapExpectedCookieAuthMWResult(test cookieAuthMWTest, userIdIn int) (expected *controllers.CookieAuthMWResult) {
+	expected = &controllers.CookieAuthMWResult{}
+	if test.isTestBlankCookieInRequest {
+		expected.SetIsCookieFoundFromGetSessionCookie(false)
+		expected.SetIsRedirectFromCheckSessionExpired(false)
+		expected.SetIsSessionFoundInDatabase(false)
+		expected.SetIsTokenSetToExpired(false)
+		expected.SetIssErrOnExpireSessionByToken(false)
+		expected.SetIsErrorOnRefreshSession(false)
+		expected.SetIsTokenSetToRefreshed(false)
+		expected.SetUserIdFromSession(0)
+
+	} else if test.isTestRedirectFromCheckSessionExpired {
+		expected.SetIsCookieFoundFromGetSessionCookie(true)
+		expected.SetIsRedirectFromCheckSessionExpired(true)
+		expected.SetIsSessionFoundInDatabase(true)
+		expected.SetIsTokenSetToExpired(true)
+		expected.SetIssErrOnExpireSessionByToken(false)
+		expected.SetIsErrorOnRefreshSession(false)
+		expected.SetIsTokenSetToRefreshed(false)
+		expected.SetUserIdFromSession(0)
+	} else {
+		expected.SetIsCookieFoundFromGetSessionCookie(true)
+		expected.SetIsRedirectFromCheckSessionExpired(false)
+		expected.SetIsSessionFoundInDatabase(true)
+		expected.SetIsTokenSetToExpired(false)
+		expected.SetIssErrOnExpireSessionByToken(false)
+		expected.SetIsErrorOnRefreshSession(false)
+		expected.SetIsTokenSetToRefreshed(true)
+		expected.SetUserIdFromSession(userIdIn)
+	}
+	return expected
+}
+
 func TestCookieAuthMiddleWare(t *testing.T) {
 
 	tests := []cookieAuthMWTest{
@@ -153,7 +173,7 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 				reqeuest setup in the test
 			*/
 			buf := &bytes.Buffer{}
-			mw := controllers.CookieAuthMiddleWare(dbc.SessionService, buf, test.isTestRedirectFromCheckSessionExpired)
+			mw := controllers.ProtectedCookieAuthMiddleWare(dbc.SessionService, buf, test.isTestRedirectFromCheckSessionExpired)
 			wrappedHandler := mw(testHandler)
 
 			newRequest, err := http.NewRequest(http.MethodGet, "/test", nil)
@@ -172,7 +192,6 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 				t.Errorf("didn't expect error, got %v\n", err)
 				return
 			}
-			fmt.Println("cookieAuthMWResult: ", helpers.PrettyJSON(cookieAuthMWResult))
 			evalCookieAuthMWResult(loggedInUserId, test, cookieAuthMWResult, t)
 		})
 	}

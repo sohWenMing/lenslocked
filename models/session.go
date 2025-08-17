@@ -150,7 +150,7 @@ If the session cannot be found, will return isRequiredRedirect == true, isSessio
 If session can be found, but it has expired, will return isRequireRedirect == true, isSessionFound == true
 Else - will return isRequireRedirect == false, isSessionFound == True
 */
-func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time) (isRequireRedirect bool, isSessionFound bool) {
+func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time) (isSessionExpired bool, isSessionFound bool) {
 	type hashExpiryStruct struct {
 		id        int
 		expiresOn time.Time

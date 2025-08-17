@@ -5,14 +5,14 @@ import (
 )
 
 // checks if the cookie with key "sessionToken" can be found. if not found or val is blank, isMustRedirect will return true
-func GetSessionCookieFromRequest(r *http.Request) (token string, isMustRedirect bool) {
+func GetSessionCookieFromRequest(r *http.Request) (token string, isFound bool) {
 	sessionCookie, err := r.Cookie("sessionToken")
 	if err != nil {
-		return "", true
+		return "", false
 	}
 	if sessionCookie.Value == "" {
-		return "", true
+		return "", false
 	}
 	token = sessionCookie.Value
-	return token, false
+	return token, true
 }

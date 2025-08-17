@@ -36,7 +36,7 @@ func main() {
 	r.Get("/faq", controllers.HandlerExecuteTemplate(template, "faq.gohtml"))
 
 	r.Route("/user", func(sr chi.Router) {
-		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, false))
+		sr.Use(controllers.ProtectedCookieAuthMiddleWare(dbc.SessionService, nil, false))
 		sr.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml"))
 	})
 	// these are protected subrroutes, where we would want ot check for the existence of a cookie in the request
