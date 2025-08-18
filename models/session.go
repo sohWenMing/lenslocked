@@ -29,42 +29,60 @@ type SessionService struct {
 }
 
 /*
-Will expire all sessions related to the userId that is passed on - and then create a new session and return.
-If error occurs, session returned will be nil
+the tokenManager is used to house all methods that are related to the creation of a new random
+token, and the hashing of said token.
 */
-func (ss *SessionService) ExpirePreviousSessionsAndCreateNewSessionByUserId(userID int) (session *Session, err error) {
-	err = ss.ExpireSessionsTokensByUserId(userID)
+type tokenManager struct{}
+
+func (tm *tokenManager) New() (token, tokenhash string, err error) {
+	token, err = SessionToken()
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
-	session, err = ss.Create(userID)
-	if err != nil {
-		return nil, err
-	}
-	return session, nil
+	return token, HashSessionToken(token), nil
 }
 
+func SessionToken() (string, error) {
+	return bytestring(SessionTokenSize)
+}
+
+func bytestring(n int) (string, error) {
+	bytes, err := randBytes(n)
+	if err != nil {
+		return "", fmt.Errorf("string: %w", err)
+	}
+	returnedString := base64.URLEncoding.EncodeToString(bytes)
+	return returnedString, nil
+}
+
+func HashSessionToken(token string) string {
+	h := sha256.New()
+	h.Write([]byte(token))
+	return base64.URLEncoding.EncodeToString(h.Sum(nil))
+}
+
+var tManager = tokenManager{}
+
 /*
-Create will create a new session for the user provided. The session token will
+CreateSession will create a new session for the user provided. The session token will
 be created as the Token field on the Session type, but only the hashed session
 token will be stored on the database.
 */
-func (ss *SessionService) Create(userID int) (*Session, error) {
-	newToken, err := SessionToken()
+func (ss *SessionService) CreateSession(userID int) (*Session, error) {
+	token, tokenHash, err := tManager.New()
 	if err != nil {
 		return nil, err
 	}
-	hashedToken := HashSessionToken(newToken)
 	expiresOn := time.Now().Add(15 * time.Minute).UTC()
 
 	row := ss.db.QueryRow(`
 	INSERT into sessions(user_id, token_hash, expires_on)
 	VALUES($1, $2, $3)
 	returning id, user_id, token_hash, expires_on;
-	`, userID, hashedToken, expiresOn)
+	`, userID, tokenHash, expiresOn)
 
 	returnedSession := &Session{}
-	returnedSession.Token = newToken
+	returnedSession.Token = token
 
 	var returnedExpiresOn time.Time
 	err = row.Scan(&returnedSession.ID, &returnedSession.UserID, &returnedSession.TokenHash, &returnedExpiresOn)
@@ -74,6 +92,23 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 	}
 	return returnedSession, nil
 }
+
+/*
+Will expire all sessions related to the userId that is passed on - and then create a new session and return.
+If error occurs, session returned will be nil
+*/
+func (ss *SessionService) ExpirePreviousSessionsAndCreateNewSessionByUserId(userID int) (session *Session, err error) {
+	err = ss.ExpireSessionsTokensByUserId(userID)
+	if err != nil {
+		return nil, err
+	}
+	session, err = ss.CreateSession(userID)
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
+}
+
 func (ss *SessionService) ExpireSessionsTokensByUserId(userID int) error {
 	_, err := ss.db.Exec(`
 		UPDATE sessions	
@@ -81,7 +116,7 @@ func (ss *SessionService) ExpireSessionsTokensByUserId(userID int) error {
 		WHERE user_id =($2);
 	`, true, userID)
 	if err != nil {
-		return HandlePgError(err)
+		return HandlePgError(err, nil)
 	}
 	return nil
 }
@@ -112,7 +147,7 @@ func (ss *SessionService) RefreshSession(token string, requestTime time.Time) (r
 	if err != nil {
 		//TODO - implement logging later
 		fmt.Println("err in refreshSession: ", err)
-		return &Session{}, HandlePgError(err)
+		return &Session{}, HandlePgError(err, NoRowsErrorOnRefreshSessionErr())
 	}
 	return &session, nil
 
@@ -190,25 +225,6 @@ func VerifySessionToken(token string, hash string) (isVerified bool, err error) 
 		return false, nil
 	}
 	return true, nil
-}
-
-func HashSessionToken(token string) string {
-	h := sha256.New()
-	h.Write([]byte(token))
-	return base64.URLEncoding.EncodeToString(h.Sum(nil))
-}
-
-func SessionToken() (string, error) {
-	return bytestring(SessionTokenSize)
-}
-
-func bytestring(n int) (string, error) {
-	bytes, err := randBytes(n)
-	if err != nil {
-		return "", fmt.Errorf("string: %w", err)
-	}
-	returnedString := base64.URLEncoding.EncodeToString(bytes)
-	return returnedString, nil
 }
 
 func randBytes(numBytes int) ([]byte, error) {

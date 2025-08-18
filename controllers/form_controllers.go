@@ -14,7 +14,7 @@ func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
 			return
 		}
-		newUserToCreate := models.UserToPlainTextPassword{
+		newUserToCreate := models.UserEmailToPlainTextPassword{
 			Email:             emailAddress,
 			PlainTextPassword: password,
 		}
@@ -40,7 +40,7 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
 			return
 		}
-		userToPassword := models.UserToPlainTextPassword{
+		userToPassword := models.UserEmailToPlainTextPassword{
 			Email:             emailAddress,
 			PlainTextPassword: password}
 

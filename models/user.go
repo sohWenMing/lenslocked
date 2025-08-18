@@ -11,15 +11,25 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserToPlainTextPassword struct {
+type UserEmailToPlainTextPassword struct {
 	Email             string
 	PlainTextPassword string
 }
 
-type User struct {
+type UserIdToSession struct {
 	ID int
 	*Session
 }
+
+type UserIdToEmail struct {
+	ID    int
+	Email string
+}
+
+func (uIdToEmail *UserIdToEmail) String() string {
+	return fmt.Sprintf("UserId: %d Email: %s", uIdToEmail.ID, uIdToEmail.Email)
+}
+
 type internalUserStruct struct {
 	ID           int
 	Email        string
@@ -32,18 +42,17 @@ type UserService struct {
 	*SessionService
 }
 
-func (us *UserService) CreateUser(newUserToCreate UserToPlainTextPassword) (*User, error) {
-	err := validateInputs(newUserToCreate.Email, newUserToCreate.PlainTextPassword)
+func (us *UserService) CreateUser(newUserToCreate UserEmailToPlainTextPassword) (*UserIdToSession, error) {
+	err := validateEmailAndPassword(newUserToCreate.Email, newUserToCreate.PlainTextPassword)
 	if err != nil {
 		return nil, err
 	}
-	preppedInfo := prepUserToPlainTextPassword(newUserToCreate)
-	hash, err := generateBcryptHash(preppedInfo.PlainTextPassword)
+	preppedInfo := setEmailLowerCaseInUserToPlainTextPassword(newUserToCreate)
+	hash, err := GenerateBcryptHash(preppedInfo.PlainTextPassword)
 	if err != nil {
 		return nil, err
 	}
-	//first attempt to generate the hash for the password, hold for storage
-
+	//first attempt to generate the hash for the password, hold for storage in the database operation below
 	row := us.db.QueryRow(`
 		INSERT INTO users (email, password_hash)
 		VALUES ($1, $2)
@@ -53,36 +62,38 @@ func (us *UserService) CreateUser(newUserToCreate UserToPlainTextPassword) (*Use
 
 	err = row.Scan(&internalUser.ID, &internalUser.Email)
 	if err != nil {
-		return &User{}, HandlePgError(err)
+		return &UserIdToSession{}, HandlePgError(err, UserNotFoundByEmailErr())
 	}
 
-	session, err := us.SessionService.Create(internalUser.ID)
+	session, err := us.SessionService.CreateSession(internalUser.ID)
 	if err != nil {
-		return &User{}, errors.New("error occured when trying to create session")
+		return &UserIdToSession{}, errors.New("error occured when trying to create session")
 	}
 	internalUser.Session = session
 	returnedUser := mapInternalUserToReturnedUser(internalUser)
-
 	return returnedUser, nil
 }
 
-func generateBcryptHash(plainTextPassword string) (hash string, err error) {
-	hashBytes, err := bcrypt.GenerateFromPassword(
-		[]byte(plainTextPassword),
-		bcrypt.DefaultCost,
-	)
+func (us *UserService) GetUserById(userId int) (userIdToEmail UserIdToEmail, err error) {
+	row := us.db.QueryRow(`
+		SELECT id, email 
+		  FROM users
+		 WHERE users.id = ($1);
+	`, userId)
+	var uIdToEmail UserIdToEmail
+	err = row.Scan(&uIdToEmail.ID, &uIdToEmail.Email)
 	if err != nil {
-		return "", err
+		return UserIdToEmail{}, HandlePgError(err, UserNotFoundByUserIdErr())
 	}
-	return string(hashBytes), nil
+	return uIdToEmail, nil
 }
 
-func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *User, err error) {
-	err = validateInputs(userToPassword.Email, userToPassword.PlainTextPassword)
+func (us *UserService) LoginUser(userToPassword UserEmailToPlainTextPassword) (user *UserIdToSession, err error) {
+	err = validateEmailAndPassword(userToPassword.Email, userToPassword.PlainTextPassword)
 	if err != nil {
 		return nil, err
 	}
-	preppedInfo := prepUserToPlainTextPassword(userToPassword)
+	preppedInfo := setEmailLowerCaseInUserToPlainTextPassword(userToPassword)
 	row := us.db.QueryRow(`
 		SELECT id, email, password_hash 
 		FROM  users
@@ -91,7 +102,7 @@ func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *
 	var internalUser internalUserStruct
 	err = row.Scan(&internalUser.ID, &internalUser.Email, &internalUser.PasswordHash)
 	if err != nil {
-		return nil, HandlePgError(err)
+		return nil, HandlePgError(err, UserNotFoundByEmailErr())
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(internalUser.PasswordHash), []byte(userToPassword.PlainTextPassword))
 	if err != nil {
@@ -99,7 +110,7 @@ func (us *UserService) LoginUser(userToPassword UserToPlainTextPassword) (user *
 	}
 	session, err := us.SessionService.ExpirePreviousSessionsAndCreateNewSessionByUserId(internalUser.ID)
 	if err != nil {
-		handlerError := HandlePgError(err)
+		handlerError := HandlePgError(err, NewSessionNotReturnedErr())
 		//TODO change Print to log function
 		fmt.Println(err)
 		return nil, errors.New(handlerError.Error())
@@ -142,22 +153,13 @@ func (us *UserService) DeleteUserAndSession(userId int) (err error) {
 	return err
 }
 
-// ##### helpers #####
-func CleanUpCreatedUserIds(createdUserIds []int, t *testing.T, dbc *DBConnections) {
-	for _, userId := range createdUserIds {
-		err := dbc.UserService.DeleteUserAndSession(userId)
-		if err != nil {
-			t.Errorf("didn't expect error, got %v\n", err)
-		}
-	}
-
-}
-func prepUserToPlainTextPassword(u UserToPlainTextPassword) UserToPlainTextPassword {
+// preps the UserToPlainTextPassword struct by lowercasing the email to ensure consistency
+func setEmailLowerCaseInUserToPlainTextPassword(u UserEmailToPlainTextPassword) UserEmailToPlainTextPassword {
 	u.Email = strings.ToLower(u.Email)
 	return u
 }
 
-func validateInputs(email, password string) error {
+func validateEmailAndPassword(email, password string) error {
 	if !isValidEmail(email) {
 		return errors.New("email is not valid")
 	}
@@ -182,9 +184,20 @@ func isValidPassword(password string) bool {
 	return true
 }
 
-func mapInternalUserToReturnedUser(internalUser internalUserStruct) *User {
-	returnedUser := &User{
+func mapInternalUserToReturnedUser(internalUser internalUserStruct) *UserIdToSession {
+	returnedUser := &UserIdToSession{
 		internalUser.ID, internalUser.Session,
 	}
 	return returnedUser
+}
+
+// ##### helpers #####
+func CleanUpCreatedUserIds(createdUserIds []int, t *testing.T, dbc *DBConnections) {
+	for _, userId := range createdUserIds {
+		err := dbc.UserService.DeleteUserAndSession(userId)
+		if err != nil {
+			t.Errorf("didn't expect error, got %v\n", err)
+		}
+	}
+
 }

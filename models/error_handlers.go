@@ -13,6 +13,55 @@ const (
 	emailTakenErrorMsg string = "email has already been used. Please try using another."
 )
 
+type sqlNoRowsErrEnum int
+
+const (
+	NoUserWithEmail sqlNoRowsErrEnum = iota
+	NoUserWithUserId
+	NoRowsErrorOnRefreshSession
+	NewSessionNotReturned
+)
+
+func (e sqlNoRowsErrEnum) String() string {
+	switch e {
+	case NoUserWithEmail:
+		return "No user could be found with that email address"
+	case NoUserWithUserId:
+		return "No user could be found with that user id"
+	case NoRowsErrorOnRefreshSession:
+		return "no rows were returned when attempting to refresh session"
+	case NewSessionNotReturned:
+		return "no session was returned after attempting to create session"
+	default:
+		return "unrecognized error, please check actual error"
+	}
+}
+
+type sqlNoRowsErrStruct struct {
+	enum sqlNoRowsErrEnum
+}
+
+func UserNotFoundByUserIdErr() *sqlNoRowsErrStruct {
+	return &sqlNoRowsErrStruct{
+		NoUserWithUserId,
+	}
+}
+func UserNotFoundByEmailErr() *sqlNoRowsErrStruct {
+	return &sqlNoRowsErrStruct{
+		NoUserWithEmail,
+	}
+}
+func NoRowsErrorOnRefreshSessionErr() *sqlNoRowsErrStruct {
+	return &sqlNoRowsErrStruct{
+		NoRowsErrorOnRefreshSession,
+	}
+}
+func NewSessionNotReturnedErr() *sqlNoRowsErrStruct {
+	return &sqlNoRowsErrStruct{
+		NewSessionNotReturned,
+	}
+}
+
 type HandledError struct {
 	err    error
 	errMsg string
@@ -41,9 +90,13 @@ func CheckIsNoRowsErr(err error) bool {
 	return errors.Is(err, sql.ErrNoRows)
 }
 
-func HandlePgError(err error) error {
+func HandlePgError(err error, noRowsErr *sqlNoRowsErrStruct) error {
 	if errors.Is(err, sql.ErrNoRows) {
-		return MapHandledError(err, "No user could be found with that email address")
+		if noRowsErr == nil {
+			return MapHandledGenericError(err)
+		} else {
+			return MapHandledError(err, noRowsErr.enum.String())
+		}
 	}
 	if strings.Contains(err.Error(), `ERROR: duplicate key value violates unique constraint "users_email_key" (SQLSTATE 23505)`) {
 		return MapHandledError(err, emailTakenErrorMsg)

@@ -3,11 +3,16 @@ package models
 import (
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/sohWenMing/lenslocked/helpers"
 )
 
 var dbc *DBConnections
+var baseUserEmailToPlainTextPassword = UserEmailToPlainTextPassword{"hello@test.com", "Holoq123holoq123"}
 
 func TestMain(m *testing.M) {
 	databaseConnection, err := InitDBConnections()
@@ -27,7 +32,7 @@ func TestCreateUser(t *testing.T) {
 	createdUserIds := []int{}
 	type test struct {
 		name           string
-		enteredInfo    UserToPlainTextPassword
+		enteredInfo    UserEmailToPlainTextPassword
 		expectedErrMsg string
 		isErrExpected  bool
 	}
@@ -35,19 +40,19 @@ func TestCreateUser(t *testing.T) {
 	tests := []test{
 		{
 			"test email validation",
-			UserToPlainTextPassword{"hello@test.com", "Holoq123holoq123"},
+			baseUserEmailToPlainTextPassword,
 			"",
 			false,
 		},
 		{
 			"test duplicate email ",
-			UserToPlainTextPassword{"hello@test.com", "Holoq123holoq123"},
+			baseUserEmailToPlainTextPassword,
 			"",
 			true,
 		},
 		{
 			"test wrong password ",
-			UserToPlainTextPassword{"hello1@test.com", "12345"},
+			UserEmailToPlainTextPassword{"hello1@test.com", "12345"},
 			"",
 			true,
 		},
@@ -90,13 +95,13 @@ func TestLoginUser(t *testing.T) {
 	type test struct {
 		name                 string
 		isErrExpectedOnLogin bool
-		userInfo             UserToPlainTextPassword
+		userInfo             UserEmailToPlainTextPassword
 	}
 	tests := []test{
 		{
 			"test happy flow",
 			false,
-			UserToPlainTextPassword{
+			UserEmailToPlainTextPassword{
 				"hello@test.com",
 				"Holoq123holoq123",
 			},
@@ -104,7 +109,7 @@ func TestLoginUser(t *testing.T) {
 		{
 			"test failed login",
 			true,
-			UserToPlainTextPassword{
+			UserEmailToPlainTextPassword{
 				"hello1@test.com",
 				"Holoq123holoq123",
 			},
@@ -121,7 +126,7 @@ func TestLoginUser(t *testing.T) {
 
 			switch test.isErrExpectedOnLogin {
 			case true:
-				changedUserInfo := UserToPlainTextPassword{
+				changedUserInfo := UserEmailToPlainTextPassword{
 					test.userInfo.Email, "fail_password",
 				}
 				_, err := dbc.UserService.LoginUser(changedUserInfo)
@@ -150,12 +155,12 @@ func TestExpireSessionsByUserId(t *testing.T) {
 	createdUserIds := []int{}
 	type test struct {
 		name     string
-		userInfo UserToPlainTextPassword
+		userInfo UserEmailToPlainTextPassword
 	}
 	tests := []test{
 		{
 			"test happy flow expire sessions by user id",
-			UserToPlainTextPassword{
+			UserEmailToPlainTextPassword{
 				"hello@test.com",
 				"Holoq123holoq123",
 			},
@@ -196,12 +201,12 @@ func TestExpireSessionsByUserId(t *testing.T) {
 func TestDeleteUser(t *testing.T) {
 	type test struct {
 		name     string
-		userInfo UserToPlainTextPassword
+		userInfo UserEmailToPlainTextPassword
 	}
 	tests := []test{
 		{
 			"test delete user",
-			UserToPlainTextPassword{
+			UserEmailToPlainTextPassword{
 				"hello@test.com",
 				"Holoq123holoq123",
 			},
@@ -257,12 +262,12 @@ func TestLogoutUser(t *testing.T) {
 	createdUserIds := []int{}
 	type test struct {
 		name     string
-		userInfo UserToPlainTextPassword
+		userInfo UserEmailToPlainTextPassword
 	}
 	tests := []test{
 		{
 			"test happy flow logout",
-			UserToPlainTextPassword{
+			UserEmailToPlainTextPassword{
 				"hello@test.com",
 				"Holoq123holoq123",
 			},
@@ -306,13 +311,13 @@ func TestRequireRedirect(t *testing.T) {
 	type test struct {
 		name             string
 		isExpectRedirect bool
-		userInfo         UserToPlainTextPassword
+		userInfo         UserEmailToPlainTextPassword
 	}
 	tests := []test{
 		{
 			"happy flow, should not require redirect",
 			false,
-			UserToPlainTextPassword{
+			UserEmailToPlainTextPassword{
 				"hello@test.com",
 				"Holoq123holoq123",
 			},
@@ -320,7 +325,7 @@ func TestRequireRedirect(t *testing.T) {
 		{
 			"should require redirect",
 			true,
-			UserToPlainTextPassword{
+			UserEmailToPlainTextPassword{
 				"hello@test1.com",
 				"Holoq123holoq123",
 			},
@@ -358,4 +363,56 @@ func TestRequireRedirect(t *testing.T) {
 	// cleanup
 	CleanUpCreatedUserIds(createdUserIds, t, dbc)
 
+}
+
+func TestGetUserById(t *testing.T) {
+	type test struct {
+		name              string
+		wantString        string
+		CreatedUserInputs UserEmailToPlainTextPassword
+		isErrExpected     bool
+		want              UserIdToEmail
+	}
+
+	createdUserIds := []int{}
+	tests := []test{
+		{
+			"happy flow, able to find created user",
+			"",
+			baseUserEmailToPlainTextPassword,
+			false,
+			UserIdToEmail{0, strings.ToLower(baseUserEmailToPlainTextPassword.Email)},
+		},
+	}
+	for _, test := range tests {
+		defer func() {
+			CleanUpCreatedUserIds(createdUserIds, t, dbc)
+		}()
+		createdUser, err := dbc.UserService.CreateUser(test.CreatedUserInputs)
+		if err != nil {
+			t.Errorf("didn't expect error, got %v", err)
+			return
+		}
+		createdUserIds = append(createdUserIds, createdUser.ID)
+		returnedUser, err := dbc.UserService.GetUserById(createdUser.ID)
+		if err != nil {
+			t.Errorf("didn't expect error, got %v", err)
+			return
+		}
+		switch test.isErrExpected {
+		case false:
+			test.want.ID = returnedUser.ID
+			if !reflect.DeepEqual(test.want, returnedUser) {
+				t.Errorf("got %s\n want %s\n", helpers.PrettyJSON(returnedUser), helpers.PrettyJSON(test.want))
+				return
+			}
+			test.wantString = fmt.Sprintf("UserId: %d Email: %s", test.want.ID, test.CreatedUserInputs.Email)
+			if test.wantString != returnedUser.String() {
+				t.Errorf("got %s\n want %s\n",
+					fmt.Sprintf(`"%s"`, returnedUser.String()),
+					fmt.Sprintf(`"%s"`, test.wantString),
+				)
+			}
+		}
+	}
 }

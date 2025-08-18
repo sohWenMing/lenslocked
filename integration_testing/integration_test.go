@@ -64,7 +64,7 @@ type cookieAuthMWTest struct {
 	name                                  string
 	isTestBlankCookieInRequest            bool
 	isTestRedirectFromCheckSessionExpired bool
-	userInfo                              models.UserToPlainTextPassword
+	userInfo                              models.UserEmailToPlainTextPassword
 }
 
 func (c *cookieAuthMWTest) createUniqueEmail() {
@@ -126,19 +126,19 @@ func TestCookieAuthMiddleWare(t *testing.T) {
 			"happy flow",
 			false,
 			false,
-			models.UserToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
+			models.UserEmailToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
 		},
 		{
 			"test redirect from no session found",
 			true,
 			false,
-			models.UserToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
+			models.UserEmailToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
 		},
 		{
 			"test redirect from expired session",
 			false,
 			true,
-			models.UserToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
+			models.UserEmailToPlainTextPassword{Email: "hello@test.com", PlainTextPassword: "Holoq123holoq123"},
 		},
 	}
 	for _, test := range tests {
@@ -240,7 +240,7 @@ func TestProcessSignOut(t *testing.T) {
 			defer func() {
 				models.CleanUpCreatedUserIds(createdUserIds, t, dbc)
 			}()
-			userInfo := models.UserToPlainTextPassword{Email: fmt.Sprintf("hello@test.com%d", emailCounter.getIncrementedCounter()),
+			userInfo := models.UserEmailToPlainTextPassword{Email: fmt.Sprintf("hello@test.com%d", emailCounter.getIncrementedCounter()),
 				PlainTextPassword: "Holoq123holoq123"}
 			shouldReturn := createUser(t, userInfo, &createdUserIds)
 			if shouldReturn {
@@ -272,13 +272,13 @@ func TestProcessSignOut(t *testing.T) {
 	}
 }
 
-func AddCookieToRequest(loggedInUser *models.User, newRequest *http.Request) {
+func AddCookieToRequest(loggedInUser *models.UserIdToSession, newRequest *http.Request) {
 	sessionToken := loggedInUser.Session.Token
 	sessionCookie := controllers.MapSessionCookie(sessionToken)
 	newRequest.AddCookie(sessionCookie)
 }
 
-func loginUser(t *testing.T, userInfo models.UserToPlainTextPassword) (*models.User, bool) {
+func loginUser(t *testing.T, userInfo models.UserEmailToPlainTextPassword) (*models.UserIdToSession, bool) {
 	loggedInUser, err := dbc.UserService.LoginUser(userInfo)
 	if err != nil {
 		t.Errorf("didn't expect error, got %v\n", err)
@@ -287,7 +287,7 @@ func loginUser(t *testing.T, userInfo models.UserToPlainTextPassword) (*models.U
 	return loggedInUser, false
 }
 
-func createUser(t *testing.T, userInfo models.UserToPlainTextPassword, createdUserIds *[]int) bool {
+func createUser(t *testing.T, userInfo models.UserEmailToPlainTextPassword, createdUserIds *[]int) bool {
 	createdUser, err := dbc.UserService.CreateUser(userInfo)
 	*createdUserIds = append(*createdUserIds, createdUser.ID)
 	if err != nil {
