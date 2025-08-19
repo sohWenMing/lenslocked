@@ -12,38 +12,41 @@ import (
 	"github.com/sohWenMing/lenslocked/views"
 )
 
-func HandlerExecuteTemplate(template ExecutorTemplateWithCSRF, fileName string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		userId, isFound := GetUserIdFromRequestContext(r)
-		if !isFound {
-			fmt.Println("userId not found")
-		} else {
-			fmt.Println("userId: ", userId)
-		}
-		otherPageData, err := views.BaseTemplatesToData.GetDataForTemplate(fileName)
-		if err != nil {
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-		pageData := views.PageData{
-			UserId:    userId,
-			OtherData: otherPageData,
-		}
-		if fileName == "signup.gohtml" || fileName == "sign.gohtml" {
-			signInSignUpFormData, ok := otherPageData.(views.SignInSignUpForm)
-			if !ok {
+func InitHandlerExecuteTemplateFunc(template ExecutorTemplateWithCSRF, userService *models.UserService) func(fileName string) http.HandlerFunc {
+	getTemplateFromDataFunc := views.InitGetDataFromTemplate(userService)
+	return func(fileName string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			userId, isFound := GetUserIdFromRequestContext(r)
+			if !isFound {
+				fmt.Println("userId not found")
+			} else {
+				fmt.Println("userId: ", userId)
+			}
+			otherPageData, err := getTemplateFromDataFunc(fileName, userId)
+			if err != nil {
 				http.Error(w, "Bad request", http.StatusBadRequest)
 				return
 			}
-			updatedSignInSignUpFormData := setSignInSignUpFormData(r, signInSignUpFormData)
-			pageData.OtherData = updatedSignInSignUpFormData
+			pageData := views.PageData{
+				UserId:    userId,
+				OtherData: otherPageData,
+			}
+			if fileName == "signup.gohtml" || fileName == "sign.gohtml" {
+				signInSignUpFormData, ok := otherPageData.(views.SignInSignUpForm)
+				if !ok {
+					http.Error(w, "Bad request", http.StatusBadRequest)
+					return
+				}
+				updatedSignInSignUpFormData := setSignInSignUpFormData(r, signInSignUpFormData)
+				pageData.OtherData = updatedSignInSignUpFormData
+			}
+
+			fmt.Println("pageData: ", pageData)
+
+			csrfToken := GetCSRFTokenFromRequest(r)
+			w.Header().Set("content-type", "text/html")
+			template.ExecTemplateWithCSRF(w, r, csrfToken, fileName, pageData)
 		}
-
-		fmt.Println("pageData: ", pageData)
-
-		csrfToken := GetCSRFTokenFromRequest(r)
-		w.Header().Set("content-type", "text/html")
-		template.ExecTemplateWithCSRF(w, r, csrfToken, fileName, pageData)
 	}
 }
 

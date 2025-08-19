@@ -435,12 +435,12 @@ func TestGetUserById(t *testing.T) {
 				if err.Error() != test.expectedErrMsg {
 					t.Errorf("got errMsg %s\n want errMsg %s\n", err.Error(), test.expectedErrMsg)
 				}
-				var handlerError *HandledError
-				if !errors.As(err, &handlerError) {
+				var handledError *HandledError
+				if !errors.As(err, &handledError) {
 					t.Errorf("error that was returned was not a handledError type")
 				}
-				if !errors.Is(handlerError.err, sql.ErrNoRows) {
-					t.Errorf("err in handledError was not of type sql.ErrNoRows: %v", handlerError.err)
+				if !errors.Is(handledError.err, sql.ErrNoRows) {
+					t.Errorf("err in handledError was not of type sql.ErrNoRows: %v", handledError.err)
 				}
 			}
 		})

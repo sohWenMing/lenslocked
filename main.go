@@ -29,26 +29,28 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
+	handlerExecuteTemplateFunc := controllers.InitHandlerExecuteTemplateFunc(template, dbc.UserService)
+
 	// ##### Get Method Handlers #####
 	// these are not protected routes, so we just use the CookieAuthMiddleWare to test for existence of logged in user
 	r.Route("/", func(sr chi.Router) {
 		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, false, false))
-		sr.Get("/contact", controllers.HandlerExecuteTemplate(template, "contact.gohtml"))
-		sr.Get("/signup", controllers.HandlerExecuteTemplate(template, "signup.gohtml"))
-		sr.Get("/signin", controllers.HandlerExecuteTemplate(template, "signin.gohtml"))
-		sr.Get("/faq", controllers.HandlerExecuteTemplate(template, "faq.gohtml"))
-		sr.Get("/", controllers.HandlerExecuteTemplate(template, "home.gohtml"))
+		sr.Get("/contact", handlerExecuteTemplateFunc("contact.gohtml"))
+		sr.Get("/signup", handlerExecuteTemplateFunc("signup.gohtml"))
+		sr.Get("/signin", handlerExecuteTemplateFunc("signin.gohtml"))
+		sr.Get("/faq", handlerExecuteTemplateFunc("faq.gohtml"))
+		sr.Get("/", handlerExecuteTemplateFunc("home.gohtml"))
 	})
 
 	// these are protected routes, so we use the CookieAuthMiddleWare to test for existence of logged in user and redirect
 	// to login if necessary
 	r.Route("/user", func(sr chi.Router) {
 		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
-		sr.Get("/about", controllers.HandlerExecuteTemplate(template, "persona_multiple.gohtml"))
+		sr.Get("/about", handlerExecuteTemplateFunc("persona_multiple.gohtml"))
 	})
 
 	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))
-	r.Get("/test_cookie", controllers.HandlerExecuteTemplate(template, "test_cookie.gohtml"))
+	r.Get("/test_cookie", handlerExecuteTemplateFunc("test_cookie.gohtml"))
 	r.Get("/send_cookie", controllers.TestSendCookie)
 
 	// ##### POST Method Handlers #####

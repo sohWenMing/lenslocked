@@ -113,6 +113,35 @@ func (b BaseTemplateToData) GetDataForTemplate(filename string) (data any, err e
 	return data, nil
 }
 
+func InitGetDataFromTemplate(userService *models.UserService) func(filename string, userId int) (data any, err error) {
+	return func(filename string, userId int) (data any, err error) {
+		switch filename {
+		case "faq.gohtml":
+			return models.QuestionsToAnswers, nil
+		case "signup.gohtml":
+			return SignUpSignInFormData, nil
+		case "signin.gohtml":
+			return SignUpSignInFormData, nil
+		case "persona_multiple.gohtml":
+			userIdToEmail, err := userService.GetUserById(userId)
+			if err != nil {
+				return nil, err
+			}
+			return userIdToEmail, nil
+		case "home.gohtml":
+			return nil, nil
+		case "contact.gohtml":
+			return nil, nil
+		case "practice_form.gohtml":
+			return nil, nil
+		case "test_cookie.gohtml":
+			return nil, nil
+		default:
+			return nil, fmt.Errorf("data cannot be found for filename %s", filename)
+		}
+	}
+}
+
 // defines the data that will be passed in at execution time for each base template
 
 //go:embed templates/*
