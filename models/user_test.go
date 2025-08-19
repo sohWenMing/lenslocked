@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -369,6 +371,7 @@ func TestGetUserById(t *testing.T) {
 	type test struct {
 		name              string
 		wantString        string
+		expectedErrMsg    string
 		CreatedUserInputs UserEmailToPlainTextPassword
 		isErrExpected     bool
 		want              UserIdToEmail
@@ -379,40 +382,67 @@ func TestGetUserById(t *testing.T) {
 		{
 			"happy flow, able to find created user",
 			"",
+			"",
 			baseUserEmailToPlainTextPassword,
 			false,
 			UserIdToEmail{0, strings.ToLower(baseUserEmailToPlainTextPassword.Email)},
 		},
+		{
+			"testing userId that does not exist",
+			"",
+			"No user could be found with that user id",
+			baseUserEmailToPlainTextPassword,
+			true,
+			UserIdToEmail{0, strings.ToLower(baseUserEmailToPlainTextPassword.Email)},
+		},
 	}
 	for _, test := range tests {
-		defer func() {
-			CleanUpCreatedUserIds(createdUserIds, t, dbc)
-		}()
-		createdUser, err := dbc.UserService.CreateUser(test.CreatedUserInputs)
-		if err != nil {
-			t.Errorf("didn't expect error, got %v", err)
-			return
-		}
-		createdUserIds = append(createdUserIds, createdUser.ID)
-		returnedUser, err := dbc.UserService.GetUserById(createdUser.ID)
-		if err != nil {
-			t.Errorf("didn't expect error, got %v", err)
-			return
-		}
-		switch test.isErrExpected {
-		case false:
-			test.want.ID = returnedUser.ID
-			if !reflect.DeepEqual(test.want, returnedUser) {
-				t.Errorf("got %s\n want %s\n", helpers.PrettyJSON(returnedUser), helpers.PrettyJSON(test.want))
+		t.Run(test.name, func(t *testing.T) {
+			defer func() {
+				CleanUpCreatedUserIds(createdUserIds, t, dbc)
+			}()
+			createdUser, err := dbc.UserService.CreateUser(test.CreatedUserInputs)
+			if err != nil {
+				t.Errorf("didn't expect error, got %v", err)
 				return
 			}
-			test.wantString = fmt.Sprintf("UserId: %d Email: %s", test.want.ID, test.CreatedUserInputs.Email)
-			if test.wantString != returnedUser.String() {
-				t.Errorf("got %s\n want %s\n",
-					fmt.Sprintf(`"%s"`, returnedUser.String()),
-					fmt.Sprintf(`"%s"`, test.wantString),
-				)
+			createdUserIds = append(createdUserIds, createdUser.ID)
+			switch test.isErrExpected {
+			case false:
+				returnedUser, err := dbc.UserService.GetUserById(createdUser.ID)
+				if err != nil {
+					t.Errorf("didn't expect error, got %v", err)
+					return
+				}
+				test.want.ID = returnedUser.ID
+				if !reflect.DeepEqual(test.want, returnedUser) {
+					t.Errorf("got %s\n want %s\n", helpers.PrettyJSON(returnedUser), helpers.PrettyJSON(test.want))
+					return
+				}
+				test.wantString = fmt.Sprintf("UserId: %d Email: %s", test.want.ID, test.CreatedUserInputs.Email)
+				if test.wantString != returnedUser.String() {
+					t.Errorf("got %s\n want %s\n",
+						fmt.Sprintf(`"%s"`, returnedUser.String()),
+						fmt.Sprintf(`"%s"`, test.wantString),
+					)
+				}
+			case true:
+				_, err := dbc.UserService.GetUserById(createdUser.ID + 1)
+				if err == nil {
+					t.Errorf("expected error, didn't get one")
+					return
+				}
+				if err.Error() != test.expectedErrMsg {
+					t.Errorf("got errMsg %s\n want errMsg %s\n", err.Error(), test.expectedErrMsg)
+				}
+				var handlerError *HandledError
+				if !errors.As(err, &handlerError) {
+					t.Errorf("error that was returned was not a handledError type")
+				}
+				if !errors.Is(handlerError.err, sql.ErrNoRows) {
+					t.Errorf("err in handledError was not of type sql.ErrNoRows: %v", handlerError.err)
+				}
 			}
-		}
+		})
 	}
 }

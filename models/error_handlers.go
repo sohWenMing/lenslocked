@@ -67,7 +67,7 @@ type HandledError struct {
 	errMsg string
 }
 
-func (g *HandledError) Error() string {
+func (g HandledError) Error() string {
 	return g.errMsg
 }
 
