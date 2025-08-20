@@ -82,35 +82,12 @@ var tplStrings = []string{
 	"contact.gohtml",
 	"faq.gohtml",
 	"persona.gohtml",
-	"persona_multiple.gohtml",
+	"user_info.gohtml",
 	"tailwind_widgets.gohtml",
 	"signup.gohtml",
 	"signin.gohtml",
 	"practice_form.gohtml",
 	"test_cookie.gohtml",
-}
-
-// list of all the defined templates that will be used for rendering
-
-type BaseTemplateToData map[string]any
-
-var BaseTemplatesToData = BaseTemplateToData{
-	"home.gohtml":             nil,
-	"contact.gohtml":          nil,
-	"faq.gohtml":              models.QuestionsToAnswers,
-	"signup.gohtml":           SignUpSignInFormData,
-	"signin.gohtml":           SignUpSignInFormData,
-	"practice_form.gohtml":    nil,
-	"test_cookie.gohtml":      nil,
-	"persona_multiple.gohtml": nil,
-}
-
-func (b BaseTemplateToData) GetDataForTemplate(filename string) (data any, err error) {
-	data, ok := b[filename]
-	if !ok {
-		return nil, fmt.Errorf("data cannot be found for filename %s", filename)
-	}
-	return data, nil
 }
 
 func InitGetDataFromTemplate(userService *models.UserService) func(filename string, userId int) (data any, err error) {
@@ -122,7 +99,7 @@ func InitGetDataFromTemplate(userService *models.UserService) func(filename stri
 			return SignUpSignInFormData, nil
 		case "signin.gohtml":
 			return SignUpSignInFormData, nil
-		case "persona_multiple.gohtml":
+		case "user_info.gohtml":
 			userIdToEmail, err := userService.GetUserById(userId)
 			if err != nil {
 				return nil, err

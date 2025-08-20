@@ -46,7 +46,7 @@ func main() {
 	// to login if necessary
 	r.Route("/user", func(sr chi.Router) {
 		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
-		sr.Get("/about", handlerExecuteTemplateFunc("persona_multiple.gohtml"))
+		sr.Get("/about", handlerExecuteTemplateFunc("user_info.gohtml"))
 	})
 
 	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))

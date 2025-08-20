@@ -1,0 +1,6 @@
+{{ template "header" . }}
+<h1>User Information</h1>
+{{if .OtherData }}
+{{ template "user-information" .OtherData}}
+{{ end}}
+{{ template "footer"}}

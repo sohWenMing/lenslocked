@@ -41,8 +41,6 @@ func InitHandlerExecuteTemplateFunc(template ExecutorTemplateWithCSRF, userServi
 				pageData.OtherData = updatedSignInSignUpFormData
 			}
 
-			fmt.Println("pageData: ", pageData)
-
 			csrfToken := GetCSRFTokenFromRequest(r)
 			w.Header().Set("content-type", "text/html")
 			template.ExecTemplateWithCSRF(w, r, csrfToken, fileName, pageData)
