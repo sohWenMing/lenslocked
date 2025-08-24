@@ -82,7 +82,6 @@ func (us *UserService) GetUserById(userId int) (userIdToEmail UserIdToEmail, err
 	`, userId)
 	var uIdToEmail UserIdToEmail
 	err = row.Scan(&uIdToEmail.ID, &uIdToEmail.Email)
-	fmt.Println("uIdToEmail: ", uIdToEmail)
 	if err != nil {
 		return UserIdToEmail{}, HandlePgError(err, UserNotFoundByUserIdErr())
 	}

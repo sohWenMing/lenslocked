@@ -204,8 +204,6 @@ func (ss *SessionService) CheckSessionExpired(token string, cutOffTime time.Time
 		return true, false
 
 	}
-	fmt.Println("expiresOn from hashExpiryStruct: ", hashExpiry.expiresOn)
-	fmt.Println("cutOffTime passed in: ", cutOffTime)
 
 	if hashExpiry.expiresOn.UTC().Before(cutOffTime.UTC()) {
 		return true, true

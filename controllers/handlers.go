@@ -19,8 +19,6 @@ func InitHandlerExecuteTemplateFunc(template ExecutorTemplateWithCSRF, userServi
 			userId, isFound := GetUserIdFromRequestContext(r)
 			if !isFound {
 				fmt.Println("userId not found")
-			} else {
-				fmt.Println("userId: ", userId)
 			}
 			otherPageData, err := getTemplateFromDataFunc(fileName, userId)
 			if err != nil {

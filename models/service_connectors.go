@@ -35,6 +35,7 @@ func defaultConfig() pgConfig {
 }
 
 func InitDBConnections() (dbc *DBConnections, err error) {
+	fmt.Println("default pg connection string: ", defaultConfig().String())
 	db, err := sql.Open(
 		"pgx",
 		defaultConfig().String(),
