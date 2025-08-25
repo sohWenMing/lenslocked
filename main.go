@@ -21,6 +21,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = models.Migrate(dbc.DB, "migrations")
+	fmt.Println("running migrations on startup")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Migrations successfully ran")
+
 	defer dbc.DB.Close()
 
 	template := views.LoadTemplates()
