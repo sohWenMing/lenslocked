@@ -1,6 +1,8 @@
 package views
 
-import "html/template"
+import (
+	"html/template"
+)
 
 type SignInSignUpForm struct {
 	EmailInputAttribs, PasswordInputAttribs inputHTMLAttribs

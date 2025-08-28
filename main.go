@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,9 @@ import (
 	"github.com/sohWenMing/lenslocked/views"
 )
 
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
+
 func main() {
 	envVars, err := models.LoadEnv(".env")
 	if err != nil {
@@ -22,7 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = models.Migrate(dbc.DB, "migrations")
+	err = models.Migrate(dbc.DB, "migrations", embedMigrations)
 	fmt.Println("running migrations on startup")
 	if err != nil {
 		log.Fatal(err)
@@ -54,6 +58,7 @@ func main() {
 	// to login if necessary
 	r.Route("/user", func(sr chi.Router) {
 		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
+		sr.Use(controllers.UserInfoMiddleWare(dbc.UserService))
 		sr.Get("/about", handlerExecuteTemplateFunc("user_info.gohtml"))
 	})
 

@@ -20,6 +20,13 @@ func InitHandlerExecuteTemplateFunc(template ExecutorTemplateWithCSRF, userServi
 			if !isFound {
 				fmt.Println("userId not found")
 			}
+			userInfo, isFound := GetUserInfoFromContext(r)
+			if !isFound {
+				fmt.Println("user info not found")
+			} else {
+				fmt.Println("user info from context: ", userInfo)
+			}
+
 			otherPageData, err := getTemplateFromDataFunc(fileName, userId)
 			if err != nil {
 				http.Error(w, "Bad request", http.StatusBadRequest)
