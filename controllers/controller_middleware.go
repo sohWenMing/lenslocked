@@ -27,6 +27,7 @@ type CookieAuthMWResult struct {
 type contextKey string
 
 const userIdKey = contextKey("userId")
+const userInfoKey = contextKey("userInfo")
 
 func (mwr *CookieAuthMWResult) SetIsCookieFoundFromGetSessionCookie(input bool) {
 	mwr.IsCookieFoundFromGetSessionCookie = input
@@ -146,6 +147,23 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isRedirec
 	}
 }
 
+func UserInfoMiddleWare(us *models.UserService) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			userId := r.Context().Value(userIdKey).(int)
+			userInfo, err := us.GetUserById(userId)
+			if err != nil {
+				//TODO: Implement logging function
+				fmt.Println(err)
+			}
+			ctx := context.WithValue(r.Context(), userInfoKey, userInfo)
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func setUserIdInContextForRequestZero(r *http.Request) *http.Request {
 	ctx := context.WithValue(r.Context(), userIdKey, 0)
 	r = r.WithContext(ctx)
@@ -165,6 +183,9 @@ func GoToPageOrRedirectToSignIn(isRedirect bool, next http.Handler, w http.Respo
 func GetUserIdKey() contextKey {
 	return userIdKey
 }
+func GetUserInfoKey() contextKey {
+	return userInfoKey
+}
 
 func GetUserIdFromRequestContext(r *http.Request) (userId int, isFound bool) {
 	ctx := r.Context()
@@ -173,4 +194,13 @@ func GetUserIdFromRequestContext(r *http.Request) (userId int, isFound bool) {
 		return 0, false
 	}
 	return userId, true
+}
+
+func GetUserInfoFromContext(r *http.Request) (userInfo models.UserIdToEmail, isFound bool) {
+	ctx := r.Context()
+	userInfo, ok := ctx.Value(GetUserInfoKey()).(models.UserIdToEmail)
+	if !ok {
+		return models.UserIdToEmail{}, false
+	}
+	return userInfo, true
 }

@@ -2,9 +2,11 @@ package models
 
 import (
 	"database/sql"
+	"embed"
 	"fmt"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/pressly/goose/v3"
 )
 
 type DBConnections struct {
@@ -61,4 +63,18 @@ func InitDBConnections() (dbc *DBConnections, err error) {
 		db,
 	}
 	return dbc, nil
+}
+
+func Migrate(db *sql.DB, dir string, embedMigrations embed.FS) error {
+	goose.SetBaseFS(embedMigrations)
+	err := goose.SetDialect("postgres")
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+	err = goose.Up(db, dir)
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+	return nil
+
 }
