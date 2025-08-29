@@ -41,7 +41,7 @@ func (mwr *CookieAuthMWResult) SetIsSessionFoundInDatabase(input bool) {
 func (mwr *CookieAuthMWResult) SetIsTokenSetToExpired(input bool) {
 	mwr.IsTokenSetToExpired = input
 }
-func (mwr *CookieAuthMWResult) SetIssErrOnExpireSessionByToken(input bool) {
+func (mwr *CookieAuthMWResult) SetIsErrOnExpireSessionByToken(input bool) {
 	mwr.IsErrOnExpireSessionByToken = input
 }
 func (mwr *CookieAuthMWResult) SetIsErrorOnRefreshSession(input bool) {
@@ -69,22 +69,25 @@ func GetCSRFTokenFromRequest(r *http.Request) template.HTML {
 
 /*
 CookieAuthMiddleWare returns a middleware that checks for the existence of a session cookie.
-If a session cookie is not found, then it will redirect user to the sign in page
-if a session cookie is found but it is expired, will redirect user to to login page after expiring the session, setting isExpired to true in database
-If a session coookie is found but not expired, will refresh the session adding 15 minutes
+
+If a session cookie is not found, then it will redirect user to the sign in page.
+
+if a session cookie is found but it is expired, will redirect user to to login page after expiring the session,
+setting isExpired to true in database.
+
+If a session cookie is found but not expired, will refresh the session adding 15 minutes to the session and set the UserId in the context
+before passing on to the next middleware.
+
 Writer passed in is used to record results from the middleware to be used for testing purposes, can set to nil for actual usage
 isTestExpiry bool is used for testing purposes, can set to nil for actual usage
 */
-
-// the middleware takes in the next handler - so if everything passes then it will delegate on to the next handler
-// if .Use is set from the router, then it will when delegate to the router's handler
-
 func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isRedirect bool, isTestExpiry bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			requestTime := time.Now().UTC()
-			//testing purposes
 
+			// ##### For Testing ##### //
+			// sets requestTime to 1 hour later than actual request time, to check forced expiry of session
 			if isTestExpiry {
 				requestTime = requestTime.Add(60 * time.Minute)
 				fmt.Println("request time checked: ", requestTime)
@@ -95,40 +98,55 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isRedirec
 			if writer != nil {
 				defer helpers.WriteToWriter(writer, cookieAuthMWRResult)
 			}
-			token, isFound := GetSessionCookieFromRequest(r)
 
-			//for testing - writes to the cookieAuthMWRResult
+			//Attempts to get the sessionToken as a cookie, from the request
+			sessionToken, isFound := GetSessionCookieFromRequest(r)
+
+			// ##### For Testing ##### //
 			cookieAuthMWRResult.SetIsCookieFoundFromGetSessionCookie(isFound)
 
+			// if session cookie is not found, sets UserId in Context to 0, and moves on to next handler
 			if !isFound {
 				cookieAuthMWRResult.SetUserIdFromSession(0)
 				r = setUserIdInContextForRequestZero(r)
 				GoToPageOrRedirectToSignIn(isRedirect, next, w, r)
 				return
 			}
-			isSessionExpired, IsSessionFoundInDatabase := ss.CheckSessionExpired(token, requestTime)
+			// looks for session in the database, and checks expiry of session
+			isSessionExpired, isSessionFound := ss.CheckSessionExpired(sessionToken, requestTime)
 
-			//for testing - writes to the cookieAuthMWRResult
-			cookieAuthMWRResult.SetIsSessionFoundInDatabase(IsSessionFoundInDatabase)
+			// ##### For Testing ##### //
+			cookieAuthMWRResult.SetIsSessionFoundInDatabase(isSessionFound)
 			cookieAuthMWRResult.SetIsRedirectFromCheckSessionExpired(isSessionExpired)
 
+			// if no session found, set the UserId to 0, and move on
+			if !isSessionFound {
+				cookieAuthMWRResult.SetUserIdFromSession(0)
+				r = setUserIdInContextForRequestZero(r)
+				GoToPageOrRedirectToSignIn(isRedirect, next, w, r)
+				return
+			}
+
+			// if session time is expired, expire the session in the database, ser the UserId to 0, and move on
 			if isSessionExpired {
-				if IsSessionFoundInDatabase {
-					err := ss.ExpireSessionByToken(token)
-					if err != nil {
-						cookieAuthMWRResult.SetIssErrOnExpireSessionByToken(true)
-						//TODO: implement logging function for error
-						fmt.Println("error occured: ", err)
-					} else {
-						cookieAuthMWRResult.SetIsTokenSetToExpired(true)
-					}
+				err := ss.ExpireSessionByToken(sessionToken)
+				if err != nil {
+					cookieAuthMWRResult.SetIsErrOnExpireSessionByToken(true)
+					//TODO: implement logging function for error
+					fmt.Println("error occured: ", err)
+				} else {
+					cookieAuthMWRResult.SetIsTokenSetToExpired(true)
 				}
 				cookieAuthMWRResult.SetUserIdFromSession(0)
 				r = setUserIdInContextForRequestZero(r)
 				GoToPageOrRedirectToSignIn(isRedirect, next, w, r)
 				return
 			}
-			session, refreshErr := ss.RefreshSession(token, requestTime)
+
+			// else, attempt to refresh the session
+			session, refreshErr := ss.RefreshSession(sessionToken, requestTime)
+
+			// if error on refresh, set UserId to 0 in context, and move on
 			if refreshErr != nil {
 				cookieAuthMWRResult.SetIsErrorOnRefreshSession(true)
 				//TODO: implement logging function for error
@@ -136,13 +154,15 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isRedirec
 				r = setUserIdInContextForRequestZero(r)
 				GoToPageOrRedirectToSignIn(isRedirect, next, w, r)
 				return
-			} else {
-				cookieAuthMWRResult.SetIsTokenSetToRefreshed(true)
 			}
+
+			// session refreshed - setUserId in context to the returned userId from the session, and move on
+			cookieAuthMWRResult.SetIsTokenSetToRefreshed(true)
 			cookieAuthMWRResult.SetUserIdFromSession(session.UserID)
 			ctx := context.WithValue(r.Context(), userIdKey, session.UserID)
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
+
 		})
 	}
 }
