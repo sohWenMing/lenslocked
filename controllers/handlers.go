@@ -84,6 +84,14 @@ func TestHandler(testText string) http.HandlerFunc {
 		fmt.Fprint(w, testText)
 	}
 }
+func TestResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	queryParams := r.URL.Query()
+	token := queryParams.Get("token")
+	fmt.Println("query params: ", queryParams)
+	fmt.Println("token: ", token)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
 
 func TestSendCookie(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("email")

@@ -54,6 +54,8 @@ func main() {
 		sr.Get("/faq", templateHandler("faq.gohtml"))
 		sr.Get("/check_email", templateHandler("check_email.gohtml"))
 		sr.Get("/", templateHandler("home.gohtml"))
+		sr.Get("/forgot_password", templateHandler("forgot_password.gohtml"))
+		sr.Get("/reset_password", controllers.TestResetPasswordHandler)
 	})
 
 	// these are protected routes, so we use the CookieAuthMiddleWare to test for existence of logged in user and redirect
@@ -64,7 +66,6 @@ func main() {
 		sr.Get("/about", templateHandler("user_info.gohtml"))
 	})
 
-	r.Get("/forgot_password", templateHandler("forgot_password.gohtml"))
 	r.Get("/test_cookie", templateHandler("test_cookie.gohtml"))
 	r.Get("/send_cookie", controllers.TestSendCookie)
 
@@ -72,7 +73,7 @@ func main() {
 	r.Post("/signup", controllers.HandleSignupForm(dbc))
 	r.Post("/signin", controllers.HandleSignInForm(dbc))
 	r.Post("/signout", controllers.HandlerSignOut(dbc.SessionService, nil))
-	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc))
+	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, envVars.BaseUrl))
 
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)

@@ -13,6 +13,7 @@ import (
 type EnvVars struct {
 	IsDev         bool
 	CSRFSecretKey string
+	BaseUrl       string
 }
 
 func LoadEnv(path string) (envVars EnvVars, err error) {
@@ -28,8 +29,13 @@ func LoadEnv(path string) (envVars EnvVars, err error) {
 	if err != nil {
 		return envVars, err
 	}
+	baseURL, err := getBaseURL()
+	if err != nil {
+		return envVars, err
+	}
 	envVars.IsDev = isDevVal
 	envVars.CSRFSecretKey = csrfSecretKey
+	envVars.BaseUrl = baseURL
 	return envVars, nil
 }
 
@@ -39,7 +45,14 @@ func getEnvVar(input string) (envVarString string, err error) {
 		return "", fmt.Errorf("env var with name %s could not be found", input)
 	}
 	return envVarString, nil
+}
 
+func getBaseURL() (string, error) {
+	baseUrl, err := getEnvVar("BASEURL")
+	if err != nil {
+		return "", err
+	}
+	return baseUrl, nil
 }
 
 func getIsDevVal() (bool, error) {
