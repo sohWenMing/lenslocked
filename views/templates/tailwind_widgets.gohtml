@@ -1,5 +1,6 @@
 {{/* ############## Header And Footer Start ######################3 */}}
-{{ define "header" }}
+
+{{ define "head" }}
 <!doctype html>
 <html>
     <head>
@@ -8,6 +9,10 @@
         <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
         <!-- ... -->
     </head>
+{{ end }}
+
+{{ define "header" }}
+    {{ template "head" }}
     <body class="min-h-screen bg-gray-100">
         <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
             <nav class="px-8 py-6 flex items-center space-x-12">

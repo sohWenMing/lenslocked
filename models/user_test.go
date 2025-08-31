@@ -374,7 +374,7 @@ func TestGetUserById(t *testing.T) {
 		expectedErrMsg    string
 		CreatedUserInputs UserEmailToPlainTextPassword
 		isErrExpected     bool
-		want              UserIdToEmail
+		want              UserInfo
 	}
 
 	createdUserIds := []int{}
@@ -385,7 +385,7 @@ func TestGetUserById(t *testing.T) {
 			"",
 			baseUserEmailToPlainTextPassword,
 			false,
-			UserIdToEmail{0, strings.ToLower(baseUserEmailToPlainTextPassword.Email)},
+			UserInfo{0, strings.ToLower(baseUserEmailToPlainTextPassword.Email)},
 		},
 		{
 			"testing userId that does not exist",
@@ -393,7 +393,7 @@ func TestGetUserById(t *testing.T) {
 			"No user could be found with that user id",
 			baseUserEmailToPlainTextPassword,
 			true,
-			UserIdToEmail{0, strings.ToLower(baseUserEmailToPlainTextPassword.Email)},
+			UserInfo{0, strings.ToLower(baseUserEmailToPlainTextPassword.Email)},
 		},
 	}
 	for _, test := range tests {

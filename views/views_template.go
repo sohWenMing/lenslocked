@@ -88,10 +88,12 @@ var tplStrings = []string{
 	"signin.gohtml",
 	"practice_form.gohtml",
 	"test_cookie.gohtml",
+	"forgot_password.gohtml",
+	"check_email.gohtml",
 }
 
-func InitGetDataFromTemplate(userService *models.UserService) func(filename string, userId int) (data any, err error) {
-	return func(filename string, userId int) (data any, err error) {
+func GetAdditionalTemplateData(userInfo models.UserInfo) func(filename string) (data any, err error) {
+	return func(filename string) (data any, err error) {
 		switch filename {
 		case "faq.gohtml":
 			return models.QuestionsToAnswers, nil
@@ -99,12 +101,10 @@ func InitGetDataFromTemplate(userService *models.UserService) func(filename stri
 			return SignUpSignInFormData, nil
 		case "signin.gohtml":
 			return SignUpSignInFormData, nil
+		case "forgot_password.gohtml":
+			return ForgotPasswordFormData, nil
 		case "user_info.gohtml":
-			userIdToEmail, err := userService.GetUserById(userId)
-			if err != nil {
-				return nil, err
-			}
-			return userIdToEmail, nil
+			return userInfo, nil
 		case "home.gohtml":
 			return nil, nil
 		case "contact.gohtml":
@@ -112,6 +112,8 @@ func InitGetDataFromTemplate(userService *models.UserService) func(filename stri
 		case "practice_form.gohtml":
 			return nil, nil
 		case "test_cookie.gohtml":
+			return nil, nil
+		case "check_email.gohtml":
 			return nil, nil
 		default:
 			return nil, fmt.Errorf("data cannot be found for filename %s", filename)
@@ -149,6 +151,7 @@ TemplateMust function will panic any error found during parsing, which will shut
 */
 
 func getTemplatePaths(tplStrings []string, baseFolderName string) []string {
+	fmt.Println("tplStrings: ", tplStrings)
 	fullPaths := make([]string, len(tplStrings))
 	for i, tplString := range tplStrings {
 		fullPath := fmt.Sprintf("%s/%s", baseFolderName, tplString)

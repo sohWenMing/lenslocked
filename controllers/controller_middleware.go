@@ -167,13 +167,28 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isRedirec
 	}
 }
 
-func UserInfoMiddleWare(us *models.UserService) func(next http.Handler) http.Handler {
+/*
+UserContext object houses methods that allow user related operations on request context
+*/
+
+type UserContext struct {
+	userService *models.UserService
+}
+
+func NewUserContext(us *models.UserService) *UserContext {
+	return &UserContext{
+		us,
+	}
+}
+
+func (uc *UserContext) SetUserMW() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			userId := r.Context().Value(userIdKey).(int)
-			userInfo, err := us.GetUserById(userId)
+			userInfo, err := uc.userService.GetUserById(userId)
 			if err != nil {
+				fmt.Println("error on getting userInfo: ", err)
+				redirectToSignIn(w, r)
 				//TODO: Implement logging function
 				fmt.Println(err)
 			}
@@ -184,10 +199,46 @@ func UserInfoMiddleWare(us *models.UserService) func(next http.Handler) http.Han
 	}
 }
 
+func (uc *UserContext) GetUserIdFromCtx(ctx context.Context) (userId int, isFound bool) {
+	userId, ok := ctx.Value(getUserIdKey()).(int)
+	if !ok {
+		return 0, false
+	}
+	return userId, true
+}
+func (uc *UserContext) GetUserInfoFromCtx(ctx context.Context) (userInfo models.UserInfo, isFound bool) {
+	userInfo, ok := ctx.Value(getUserInfoKey()).(models.UserInfo)
+	if !ok {
+		return models.UserInfo{}, false
+	}
+	return userInfo, true
+}
+
+func GetUserIdFromRequestContext(r *http.Request) (userId int, isFound bool) {
+	ctx := r.Context()
+	userId, ok := ctx.Value(getUserIdKey()).(int)
+	if !ok {
+		return 0, false
+	}
+	return userId, true
+}
+
+func GetUserInfoFromContext(r *http.Request) (userInfo models.UserInfo, isFound bool) {
+	ctx := r.Context()
+	userInfo, ok := ctx.Value(getUserInfoKey()).(models.UserInfo)
+	if !ok {
+		return models.UserInfo{}, false
+	}
+	return userInfo, true
+}
+
 func setUserIdInContextForRequestZero(r *http.Request) *http.Request {
 	ctx := context.WithValue(r.Context(), userIdKey, 0)
 	r = r.WithContext(ctx)
 	return r
+}
+func redirectToSignIn(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/signin", http.StatusFound)
 }
 
 func GoToPageOrRedirectToSignIn(isRedirect bool, next http.Handler, w http.ResponseWriter, r *http.Request) {
@@ -200,27 +251,9 @@ func GoToPageOrRedirectToSignIn(isRedirect bool, next http.Handler, w http.Respo
 		return
 	}
 }
-func GetUserIdKey() contextKey {
+func getUserIdKey() contextKey {
 	return userIdKey
 }
-func GetUserInfoKey() contextKey {
+func getUserInfoKey() contextKey {
 	return userInfoKey
-}
-
-func GetUserIdFromRequestContext(r *http.Request) (userId int, isFound bool) {
-	ctx := r.Context()
-	userId, ok := ctx.Value(GetUserIdKey()).(int)
-	if !ok {
-		return 0, false
-	}
-	return userId, true
-}
-
-func GetUserInfoFromContext(r *http.Request) (userInfo models.UserIdToEmail, isFound bool) {
-	ctx := r.Context()
-	userInfo, ok := ctx.Value(GetUserInfoKey()).(models.UserIdToEmail)
-	if !ok {
-		return models.UserIdToEmail{}, false
-	}
-	return userInfo, true
 }

@@ -41,35 +41,38 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	handlerExecuteTemplateFunc := controllers.InitHandlerExecuteTemplateFunc(template, dbc.UserService)
+	userContext := controllers.NewUserContext(dbc.UserService)
+	templateHandler := controllers.InitTemplateHandler(template, userContext)
 
 	// ##### Get Method Handlers #####
 	// these are not protected routes, so we just use the CookieAuthMiddleWare to test for existence of logged in user
 	r.Route("/", func(sr chi.Router) {
 		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, false, false))
-		sr.Get("/contact", handlerExecuteTemplateFunc("contact.gohtml"))
-		sr.Get("/signup", handlerExecuteTemplateFunc("signup.gohtml"))
-		sr.Get("/signin", handlerExecuteTemplateFunc("signin.gohtml"))
-		sr.Get("/faq", handlerExecuteTemplateFunc("faq.gohtml"))
-		sr.Get("/", handlerExecuteTemplateFunc("home.gohtml"))
+		sr.Get("/contact", templateHandler("contact.gohtml"))
+		sr.Get("/signup", templateHandler("signup.gohtml"))
+		sr.Get("/signin", templateHandler("signin.gohtml"))
+		sr.Get("/faq", templateHandler("faq.gohtml"))
+		sr.Get("/check_email", templateHandler("check_email.gohtml"))
+		sr.Get("/", templateHandler("home.gohtml"))
 	})
 
 	// these are protected routes, so we use the CookieAuthMiddleWare to test for existence of logged in user and redirect
 	// to login if necessary
 	r.Route("/user", func(sr chi.Router) {
 		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
-		sr.Use(controllers.UserInfoMiddleWare(dbc.UserService))
-		sr.Get("/about", handlerExecuteTemplateFunc("user_info.gohtml"))
+		sr.Use(userContext.SetUserMW())
+		sr.Get("/about", templateHandler("user_info.gohtml"))
 	})
 
-	r.Get("/forgot_password", controllers.TestHandler("To do - forgot password page"))
-	r.Get("/test_cookie", handlerExecuteTemplateFunc("test_cookie.gohtml"))
+	r.Get("/forgot_password", templateHandler("forgot_password.gohtml"))
+	r.Get("/test_cookie", templateHandler("test_cookie.gohtml"))
 	r.Get("/send_cookie", controllers.TestSendCookie)
 
 	// ##### POST Method Handlers #####
 	r.Post("/signup", controllers.HandleSignupForm(dbc))
 	r.Post("/signin", controllers.HandleSignInForm(dbc))
 	r.Post("/signout", controllers.HandlerSignOut(dbc.SessionService, nil))
+	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc))
 
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)

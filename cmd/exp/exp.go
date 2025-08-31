@@ -1,20 +1,22 @@
 package main
 
 import (
-	"context"
-	"errors"
-	"fmt"
+	"os"
+
+	"gopkg.in/gomail.v2"
 )
 
-type contextColor string
-
 func main() {
-	ctx := context.WithValue(context.Background(), contextColor("favourite-color"), "blue")
-	value := ctx.Value(contextColor("favourite-color"))
-	fmt.Println("value:", value)
-	valueString, ok := value.(string)
-	if !ok {
-		panic(errors.New("value from favourite color is not a string"))
+	m := gomail.NewMessage()
+	m.SetHeader("From", "wenming.soh@nindgabeet.com")
+	m.SetHeader("To", "wenming.soh@gmail.com")
+	m.SetAddressHeader("Cc", "sarahlinshuyi@gmail.com", "Sarah")
+	m.SetBody("text/html", "Hello <b>Wen</b")
+	m.WriteTo(os.Stdout)
+
+	d := gomail.NewDialer("sandbox.smtp.mailtrap.io", 587, "ec07c285658e45", "b633f2509083f8")
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
 	}
-	fmt.Println("valueString", valueString)
+
 }

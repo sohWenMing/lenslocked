@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/sohWenMing/lenslocked/models"
 )
@@ -55,6 +56,22 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 		http.Redirect(w, r, "/user/about", http.StatusFound)
 	}
 }
+func HandleForgotPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		email, err := ParseEmailFromForgetPasswordForm(r)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
+			return
+		}
+		userInfo, err := dbc.UserService.GetUserByEmail(strings.ToLower(email))
+		if err != nil {
+			// TODO: Implement logging function
+			fmt.Println("error: ", err)
+		}
+		fmt.Println("userInfo: ", userInfo)
+		http.Redirect(w, r, "/check_email", http.StatusFound)
+	}
+}
 
 func parseEmailAndPasswordFromForm(r *http.Request) (email, password string, err error) {
 	err = r.ParseForm()
@@ -64,4 +81,14 @@ func parseEmailAndPasswordFromForm(r *http.Request) (email, password string, err
 	email = r.PostForm.Get("email")
 	password = r.PostForm.Get("password")
 	return email, password, nil
+}
+
+func ParseEmailFromForgetPasswordForm(r *http.Request) (email string, err error) {
+	err = r.ParseForm()
+	if err != nil {
+		return email, err
+	}
+	email = r.PostForm.Get("email")
+	fmt.Println("email entered: ", email)
+	return email, nil
 }

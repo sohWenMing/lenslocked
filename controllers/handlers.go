@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -12,23 +13,29 @@ import (
 	"github.com/sohWenMing/lenslocked/views"
 )
 
-func InitHandlerExecuteTemplateFunc(template ExecutorTemplateWithCSRF, userService *models.UserService) func(fileName string) http.HandlerFunc {
-	getTemplateFromDataFunc := views.InitGetDataFromTemplate(userService)
+type userContext interface {
+	GetUserIdFromCtx(ctx context.Context) (userId int, isFound bool)
+	GetUserInfoFromCtx(ctx context.Context) (userInfo models.UserInfo, isFound bool)
+}
+
+func InitTemplateHandler(template ExecutorTemplateWithCSRF, uc userContext) func(fileName string) http.HandlerFunc {
 	return func(fileName string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			userId, isFound := GetUserIdFromRequestContext(r)
+			userId, isFound := uc.GetUserIdFromCtx(r.Context())
 			if !isFound {
 				fmt.Println("userId not found")
 			}
-			userInfo, isFound := GetUserInfoFromContext(r)
+			userInfo, isFound := uc.GetUserInfoFromCtx(r.Context())
 			if !isFound {
 				fmt.Println("user info not found")
 			} else {
 				fmt.Println("user info from context: ", userInfo)
 			}
+			fmt.Println("filename: ", fileName)
 
-			otherPageData, err := getTemplateFromDataFunc(fileName, userId)
+			otherPageData, err := views.GetAdditionalTemplateData(userInfo)(fileName)
 			if err != nil {
+				fmt.Println("error: ", err)
 				http.Error(w, "Bad request", http.StatusBadRequest)
 				return
 			}

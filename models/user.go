@@ -21,13 +21,13 @@ type UserIdToSession struct {
 	*Session
 }
 
-type UserIdToEmail struct {
+type UserInfo struct {
 	ID    int
 	Email string
 }
 
-func (uIdToEmail *UserIdToEmail) String() string {
-	return fmt.Sprintf("UserId: %d Email: %s", uIdToEmail.ID, uIdToEmail.Email)
+func (userInfo *UserInfo) String() string {
+	return fmt.Sprintf("UserId: %d Email: %s", userInfo.ID, userInfo.Email)
 }
 
 type internalUserStruct struct {
@@ -74,16 +74,31 @@ func (us *UserService) CreateUser(newUserToCreate UserEmailToPlainTextPassword) 
 	return returnedUser, nil
 }
 
-func (us *UserService) GetUserById(userId int) (userIdToEmail UserIdToEmail, err error) {
+func (us *UserService) GetUserByEmail(email string) (userIdToEmail UserInfo, err error) {
+	row := us.db.QueryRow(`
+		SELECT id, email 
+		  FROM users
+		 WHERE users.email = ($1);
+	`, email)
+	var uIdToEmail UserInfo
+	err = row.Scan(&uIdToEmail.ID, &uIdToEmail.Email)
+	if err != nil {
+		return UserInfo{}, HandlePgError(err, UserNotFoundByUserIdErr())
+	}
+	return uIdToEmail, nil
+
+}
+
+func (us *UserService) GetUserById(userId int) (userIdToEmail UserInfo, err error) {
 	row := us.db.QueryRow(`
 		SELECT id, email 
 		  FROM users
 		 WHERE users.id = ($1);
 	`, userId)
-	var uIdToEmail UserIdToEmail
+	var uIdToEmail UserInfo
 	err = row.Scan(&uIdToEmail.ID, &uIdToEmail.Email)
 	if err != nil {
-		return UserIdToEmail{}, HandlePgError(err, UserNotFoundByUserIdErr())
+		return UserInfo{}, HandlePgError(err, UserNotFoundByUserIdErr())
 	}
 	return uIdToEmail, nil
 }
