@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	uuid "github.com/google/uuid"
@@ -9,6 +10,16 @@ import (
 
 type ForgotPWService struct {
 	db *sql.DB
+}
+
+type ForgotPasswordToken struct {
+	Id        int
+	Token     uuid.UUID
+	ExpiresOn time.Time
+}
+
+func (fpwt ForgotPasswordToken) GetExpiry() time.Time {
+	return fpwt.ExpiresOn
 }
 
 func (fpws *ForgotPWService) NewToken() (newToken uuid.UUID, err error) {
@@ -27,4 +38,20 @@ func (fpws *ForgotPWService) NewToken() (newToken uuid.UUID, err error) {
 		return uuid.UUID{}, err
 	}
 	return returnedToken, nil
+}
+
+func (fpws *ForgotPWService) GetForgotPWToken(token uuid.UUID) (ForgotPasswordToken, error) {
+	fmt.Println("token: ", token)
+	row := fpws.db.QueryRow(
+		`
+		SELECT id, token, expires_on FROM forgot_password_tokens
+		WHERE token=($1)
+		`, token,
+	)
+	var fpwToken ForgotPasswordToken
+	err := row.Scan(&fpwToken.Id, &fpwToken.Token, &fpwToken.ExpiresOn)
+	if err != nil {
+		return ForgotPasswordToken{}, err
+	}
+	return fpwToken, nil
 }

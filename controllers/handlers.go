@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/sohWenMing/lenslocked/helpers"
 	"github.com/sohWenMing/lenslocked/models"
 	"github.com/sohWenMing/lenslocked/views"
@@ -84,13 +86,28 @@ func TestHandler(testText string) http.HandlerFunc {
 		fmt.Fprint(w, testText)
 	}
 }
-func TestResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
-	queryParams := r.URL.Query()
-	token := queryParams.Get("token")
-	fmt.Println("query params: ", queryParams)
-	fmt.Println("token: ", token)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+
+func ResetPasswordHandler(fwps *models.ForgotPWService) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		queryParams := r.URL.Query()
+		token := queryParams.Get("token")
+		fmt.Println("query params: ", queryParams)
+		fmt.Println("token: ", token)
+
+		uuid, err := uuid.Parse(token)
+		if err != nil {
+			fmt.Println("error from parsing uuid: ", err)
+		}
+		returnedToken, err := fwps.GetForgotPWToken(uuid)
+		if err != nil {
+			fmt.Println("error: ", err)
+		}
+		expiry := returnedToken.GetExpiry()
+		fmt.Println("expiry: ", expiry)
+		fmt.Println("now time: ", time.Now())
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("We are here at the reset password handler"))
+	})
 }
 
 func TestSendCookie(w http.ResponseWriter, r *http.Request) {
