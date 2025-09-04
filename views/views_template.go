@@ -18,7 +18,7 @@ type Template struct {
 The Template struct is used to house the type *template.Template so that a the method ExecTemplate can be
 attached to it.
 
-ExecTemplateWithCSTF - allows us to pass in the csrfField, which will in turn be passed on to the function defined in
+ExecTemplateWithCSRF - allows us to pass in the csrfField, which will in turn be passed on to the function defined in
 cloned.Funcs
 
 # ExecTemplate - normal execution of template with the need fo csrfField
