@@ -13,8 +13,10 @@ import (
 	"testing"
 
 	"github.com/sohWenMing/lenslocked/controllers"
+	"github.com/sohWenMing/lenslocked/gomailer"
 	"github.com/sohWenMing/lenslocked/helpers"
 	"github.com/sohWenMing/lenslocked/models"
+	"github.com/sohWenMing/lenslocked/services"
 )
 
 var isDev = false
@@ -34,20 +36,61 @@ func (s *safeCounter) getIncrementedCounter() int {
 
 var emailCounter = safeCounter{}
 
+var env *models.Envs
+var mailer services.Emailer
+
+type emailEnvs struct {
+	host     string
+	port     int
+	username string
+	password string
+}
+
+var mailEnvs = emailEnvs{}
+
 func TestMain(m *testing.M) {
-	envVars, err := models.LoadEnv("../.env")
+	env, err := models.LoadEnv("../.env")
 	if err != nil {
 		log.Fatal(err)
 	}
-	isDev = envVars.IsDev
+	envIsDev, err := env.GetIsDev()
+	if err != nil {
+		panic(err)
+	}
+	isDev = envIsDev
 	databaseConnection, err := models.InitDBConnections()
 	if err != nil {
 		fmt.Println("error occured during initialisation of db connection during test")
 		os.Exit(1)
 	}
 	dbc = databaseConnection
+	loadMailEnvs()
+	mailer = gomailer.NewGoMailer(mailEnvs.host, mailEnvs.username, mailEnvs.password, mailEnvs.port)
 	code := m.Run()
 	os.Exit(code)
+}
+func loadMailEnvs() {
+	emailHost, err := env.GetEmailHost()
+	if err != nil {
+		panic(err)
+	}
+	mailEnvs.host = emailHost
+	emailPort, err := env.GetEmailPort()
+	if err != nil {
+		panic(err)
+	}
+	mailEnvs.port = emailPort
+	emailUserName, err := env.GetEmailUsername()
+	if err != nil {
+		panic(err)
+	}
+	mailEnvs.username = emailUserName
+	emailPassword, err := env.GetEmailPassword()
+	if err != nil {
+		panic(err)
+	}
+	mailEnvs.password = emailPassword
+	fmt.Println("mailEnvs: ", mailEnvs)
 }
 
 func TestEnvLoading(t *testing.T) {

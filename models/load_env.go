@@ -10,33 +10,63 @@ import (
 	"github.com/sohWenMing/lenslocked/helpers"
 )
 
-type EnvVars struct {
-	IsDev         bool
-	CSRFSecretKey string
-	BaseUrl       string
+type Envs struct {
 }
 
-func LoadEnv(path string) (envVars EnvVars, err error) {
-	err = godotenv.Load(path)
-	if err != nil {
-		return envVars, err
-	}
+func (e *Envs) GetIsDev() (bool, error) {
 	isDevVal, err := getIsDevVal()
 	if err != nil {
-		return envVars, err
+		return false, err
 	}
-	csrfSecretKey, err := getCSRFKey()
+	return isDevVal, nil
+}
+
+func (e *Envs) GetCSRFSecretKey() (string, error) {
+	csrfKey, err := getEnvVar("SECRETKEY")
 	if err != nil {
-		return envVars, err
+		return "", err
 	}
-	baseURL, err := getBaseURL()
+	return csrfKey, nil
+}
+func (e *Envs) GetBaseURL() (string, error) {
+	baseUrl, err := getEnvVar("BASEURL")
 	if err != nil {
-		return envVars, err
+		return "", err
 	}
-	envVars.IsDev = isDevVal
-	envVars.CSRFSecretKey = csrfSecretKey
-	envVars.BaseUrl = baseURL
-	return envVars, nil
+	return baseUrl, nil
+}
+func (e *Envs) GetEmailHost() (string, error) {
+	host, err := getEnvVar("EMAILHOST")
+	if err != nil {
+		return "", err
+	}
+	return host, nil
+}
+func (e *Envs) GetEmailPassword() (string, error) {
+	password, err := getEnvVar("EMAILPASSWORD")
+	if err != nil {
+		return "", err
+	}
+	return password, nil
+}
+func (e *Envs) GetEmailUsername() (string, error) {
+	password, err := getEnvVar("EMAILUSERNAME")
+	if err != nil {
+		return "", err
+	}
+	return password, nil
+}
+func (e *Envs) GetEmailPort() (int, error) {
+	port, err := getEmailPort()
+	return port, err
+}
+
+func LoadEnv(path string) (envs *Envs, err error) {
+	err = godotenv.Load(path)
+	if err != nil {
+		return nil, err
+	}
+	return envs, nil
 }
 
 func getEnvVar(input string) (envVarString string, err error) {
@@ -45,14 +75,6 @@ func getEnvVar(input string) (envVarString string, err error) {
 		return "", fmt.Errorf("env var with name %s could not be found", input)
 	}
 	return envVarString, nil
-}
-
-func getBaseURL() (string, error) {
-	baseUrl, err := getEnvVar("BASEURL")
-	if err != nil {
-		return "", err
-	}
-	return baseUrl, nil
 }
 
 func getIsDevVal() (bool, error) {
@@ -66,10 +88,15 @@ func getIsDevVal() (bool, error) {
 	}
 	return isDevVal, nil
 }
-func getCSRFKey() (string, error) {
-	CSRFSecretKey, err := getEnvVar("SECRETKEY")
+
+func getEmailPort() (int, error) {
+	portString, err := getEnvVar("PORT")
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	return CSRFSecretKey, nil
+	port, err := strconv.Atoi(portString)
+	if err != nil {
+		return 0, err
+	}
+	return port, nil
 }

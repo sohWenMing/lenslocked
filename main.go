@@ -16,11 +16,27 @@ import (
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
+var isDev bool
+var baseUrl string
+var csrfSecretKey string
+
 func main() {
 	envVars, err := models.LoadEnv(".env")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	envIsDev, err := envVars.GetIsDev()
+	if err != nil {
+		log.Fatal(err)
+	}
+	isDev = envIsDev
+
+	envcsrfSecretKey, err := envVars.GetCSRFSecretKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+	csrfSecretKey = envcsrfSecretKey
 	dbc, err := models.InitDBConnections()
 	if err != nil {
 		log.Fatal(err)
@@ -73,12 +89,12 @@ func main() {
 	r.Post("/signup", controllers.HandleSignupForm(dbc))
 	r.Post("/signin", controllers.HandleSignInForm(dbc))
 	r.Post("/signout", controllers.HandlerSignOut(dbc.SessionService, nil))
-	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, envVars.BaseUrl))
+	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, baseUrl))
 
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)
 
-	CSRFMw := controllers.CSRFProtect(envVars.IsDev, envVars.CSRFSecretKey)
+	CSRFMw := controllers.CSRFProtect(isDev, csrfSecretKey)
 
 	fmt.Println("Starting the server on :3000...")
 	log.Fatal(http.ListenAndServe(":3000", CSRFMw(r)))

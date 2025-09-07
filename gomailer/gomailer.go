@@ -9,31 +9,33 @@ import (
 
 type GoMailer struct {
 	dialer *gomail.Dialer
-	writer io.Writer
 }
 
-func NewGoMailer(host, username, password string, port int, writer io.Writer) *GoMailer {
+func NewGoMailer(host, username, password string, port int) *GoMailer {
 	return &GoMailer{
 		gomail.NewDialer(host, port, username, password),
-		writer,
 	}
 }
 
-func (g *GoMailer) SendEmail(email services.Email) error {
-	m := gomail.NewMessage()
-	m.SetHeader("From: ", email.From)
-	m.SetHeader("To: ", email.To)
-	if len(email.Cc) > 0 {
-		m.SetHeader("Cc", email.Cc...)
-	}
-	m.SetBody(email.ContentType, email.ContentType)
-	if g.writer != nil {
-		m.WriteTo(g.writer)
+func (g *GoMailer) SendEmail(email services.Email, w io.Writer) error {
+	m := g.PrepEmail(email, w)
+	if w != nil {
+		m.WriteTo(w)
 	}
 	err := g.dialer.DialAndSend(m)
 	if err != nil {
 		return err
 	}
 	return nil
+}
 
+func (g *GoMailer) PrepEmail(email services.Email, w io.Writer) *gomail.Message {
+	m := gomail.NewMessage()
+	m.SetHeader("From", email.From)
+	m.SetHeader("To", email.To)
+	if len(email.Cc) > 0 {
+		m.SetHeader("Cc", email.Cc...)
+	}
+	m.SetBody(email.ContentType, email.Content)
+	return m
 }
