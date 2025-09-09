@@ -22,15 +22,15 @@ func (fpwt ForgotPasswordToken) GetExpiry() time.Time {
 	return fpwt.ExpiresOn
 }
 
-func (fpws *ForgotPWService) NewToken() (newToken uuid.UUID, err error) {
+func (fpws *ForgotPWService) NewToken(userId int) (newToken uuid.UUID, err error) {
 	newUUID := uuid.New()
 	expires_on := time.Now().Add(time.Duration(15 * time.Minute)).UTC()
 	row := fpws.db.QueryRow(
 		`
-		INSERT INTO forgot_password_tokens(token, expires_on)
-		VALUES($1, $2)
+		INSERT INTO forgot_password_tokens(user_id, token, expires_on)
+		VALUES($1, $2, $3)
 		returning token;
-		`, newUUID, expires_on,
+		`, NoUserWithUserId, newUUID, expires_on,
 	)
 	var returnedToken uuid.UUID
 	err = row.Scan(&returnedToken)

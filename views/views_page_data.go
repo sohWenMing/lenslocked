@@ -44,6 +44,34 @@ var ForgotPasswordFormData = ForgotPasswordForm{
 	},
 }
 
+type ResetPasswordForm struct {
+	NewPasswordInputAttribs     inputHTMLAttribs
+	ConfirmPasswordInputAttribs inputHTMLAttribs
+}
+
+var ResetPasswordFormData = ResetPasswordForm{
+	NewPasswordInputAttribs: inputHTMLAttribs{
+		"enter-password",
+		"enter-password",
+		"password",
+		"Enter Password",
+		"",
+		"Enter Password",
+		true,
+		"",
+	},
+	ConfirmPasswordInputAttribs: inputHTMLAttribs{
+		"confirm-password",
+		"confirm-password",
+		"password",
+		"Confirm Password",
+		"",
+		"Confirm Password",
+		true,
+		"",
+	},
+}
+
 type PageData struct {
 	UserId    int
 	OtherData any

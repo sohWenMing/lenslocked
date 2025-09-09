@@ -89,6 +89,7 @@ var tplStrings = []string{
 	"practice_form.gohtml",
 	"test_cookie.gohtml",
 	"forgot_password.gohtml",
+	"reset_password.gohtml",
 	"check_email.gohtml",
 }
 
@@ -103,6 +104,8 @@ func GetAdditionalTemplateData(userInfo models.UserInfo) func(filename string) (
 			return SignUpSignInFormData, nil
 		case "forgot_password.gohtml":
 			return ForgotPasswordFormData, nil
+		case "reset_password.gohtml":
+			return ResetPasswordFormData, nil
 		case "user_info.gohtml":
 			return userInfo, nil
 		case "home.gohtml":

@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/sohWenMing/lenslocked/models"
@@ -68,7 +70,7 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string) func(w 
 			// TODO: Implement logging function
 			fmt.Println("error: ", err)
 		}
-		newToken, err := dbc.ForgotPWService.NewToken()
+		newToken, err := dbc.ForgotPWService.NewToken(userInfo.ID)
 		if err != nil {
 			// TODO: Implement logging function
 			fmt.Println("error: ", err)
@@ -79,6 +81,36 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string) func(w 
 		fmt.Println("urlToReturn: ", urlToReturn)
 		http.Redirect(w, r, "/check_email", http.StatusFound)
 	}
+}
+
+func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("OK, the reset password form got submitted")
+
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+		}
+		fmt.Println("Form: ", r.Form)
+
+		err = validatePasswordReset(r.Form)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("passwords must match"))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Reached reset handler form"))
+	})
+}
+
+func validatePasswordReset(form url.Values) error {
+	confirmPassword := form.Get("confirm-password")
+	enterPassword := form.Get("enter-password")
+	if enterPassword != confirmPassword {
+		return errors.New("passwords must match")
+	}
+	return nil
 }
 
 func parseEmailAndPasswordFromForm(r *http.Request) (email, password string, err error) {

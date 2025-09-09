@@ -105,8 +105,9 @@ func ResetPasswordHandler(fwps *models.ForgotPWService) http.HandlerFunc {
 		expiry := returnedToken.GetExpiry()
 		fmt.Println("expiry: ", expiry)
 		fmt.Println("now time: ", time.Now())
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("We are here at the reset password handler"))
+
+		//TODO - work on the error handling later, for now just test the redirect is working
+		http.Redirect(w, r, "/test_reset_pw_redirect", http.StatusFound)
 	})
 }
 
