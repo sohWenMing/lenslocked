@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/sohWenMing/lenslocked/models"
+	"github.com/sohWenMing/lenslocked/services"
 )
 
 func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +84,7 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string) func(w 
 	}
 }
 
-func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+func HandlerResetPasswordForm(dbc *models.DBConnections, emailer services.Emailer) func(w http.ResponseWriter, r *http.Request) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("OK, the reset password form got submitted")
 

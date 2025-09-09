@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sohWenMing/lenslocked/controllers"
+	"github.com/sohWenMing/lenslocked/gomailer"
 	"github.com/sohWenMing/lenslocked/models"
 	"github.com/sohWenMing/lenslocked/views"
 )
@@ -25,7 +26,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	emailEnvs, err := envVars.LoadEmailEnvs()
+	if err != nil {
+		log.Fatal(err)
+	}
+	initGoMailer := gomailer.NewGoMailer(emailEnvs.Host, emailEnvs.Username, emailEnvs.Password, emailEnvs.Port)
 	envIsDev, err := envVars.GetIsDev()
 	if err != nil {
 		log.Fatal(err)
@@ -91,7 +96,7 @@ func main() {
 	r.Post("/signin", controllers.HandleSignInForm(dbc))
 	r.Post("/signout", controllers.HandlerSignOut(dbc.SessionService, nil))
 	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, baseUrl))
-	r.Post("/reset_password_submit", controllers.HandlerResetPasswordForm(dbc))
+	r.Post("/reset_password_submit", controllers.HandlerResetPasswordForm(dbc, initGoMailer))
 
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)

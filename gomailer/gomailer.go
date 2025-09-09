@@ -11,6 +11,13 @@ type GoMailer struct {
 	dialer *gomail.Dialer
 }
 
+type EmailEnvs struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+}
+
 func NewGoMailer(host, username, password string, port int) *GoMailer {
 	return &GoMailer{
 		gomail.NewDialer(host, port, username, password),

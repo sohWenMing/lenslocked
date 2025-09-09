@@ -10,7 +10,38 @@ import (
 	"github.com/sohWenMing/lenslocked/helpers"
 )
 
-type Envs struct {
+type Envs struct{}
+
+type EmailEnvs struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+}
+
+func (e *Envs) LoadEmailEnvs() (emailEnvs *EmailEnvs, err error) {
+	emailHost, err := e.GetEmailHost()
+	if err != nil {
+		return nil, err
+	}
+	emailPort, err := e.GetEmailPort()
+	if err != nil {
+		return nil, err
+	}
+	emailUserName, err := e.GetEmailUsername()
+	if err != nil {
+		return nil, err
+	}
+	emailPassword, err := e.GetEmailPassword()
+	if err != nil {
+		return nil, err
+	}
+	return &EmailEnvs{
+		Host:     emailHost,
+		Port:     emailPort,
+		Username: emailUserName,
+		Password: emailPassword,
+	}, nil
 }
 
 func (e *Envs) GetIsDev() (bool, error) {
