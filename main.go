@@ -11,6 +11,7 @@ import (
 	"github.com/sohWenMing/lenslocked/controllers"
 	"github.com/sohWenMing/lenslocked/gomailer"
 	"github.com/sohWenMing/lenslocked/models"
+	"github.com/sohWenMing/lenslocked/services"
 	"github.com/sohWenMing/lenslocked/views"
 )
 
@@ -26,6 +27,7 @@ func main() {
 
 	emailEnvVars := getEmailEnvVars(envVars)
 	initGoMailer := gomailer.NewGoMailer(emailEnvVars.Host, emailEnvVars.Username, emailEnvVars.Password, emailEnvVars.Port)
+	emailService := services.InitEmailService(initGoMailer, services.LoadEmailTemplates())
 
 	setIsDev(envVars)
 	setCSRFSecretKey(envVars)
@@ -83,7 +85,7 @@ func main() {
 	r.Post("/signup", controllers.HandleSignupForm(dbc))
 	r.Post("/signin", controllers.HandleSignInForm(dbc))
 	r.Post("/signout", controllers.HandlerSignOut(dbc.SessionService, nil))
-	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, baseUrl, initGoMailer))
+	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, baseUrl, emailService))
 	r.Post("/reset_password_submit", controllers.HandlerResetPasswordForm(dbc))
 
 	// ##### Not Found Handler #####

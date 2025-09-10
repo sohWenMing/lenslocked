@@ -14,8 +14,8 @@ func TestResetPasswordTemplate(t *testing.T) {
 		"https://www.google.com",
 	}
 	buf := bytes.Buffer{}
-	emailTemplate := loadEmailTemplates()
-	err := emailTemplate.emailHTMLTpl.ExecuteTemplate(&buf, "reset_password_email.gohtml", testData)
+	emailTemplate := LoadEmailTemplates()
+	err := emailTemplate.EmailHTMLTpl.ExecuteTemplate(&buf, "reset_password_email.gohtml", testData)
 	if err != nil {
 		t.Errorf("didn't expect error, got %v\n", err)
 	}

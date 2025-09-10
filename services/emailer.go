@@ -15,20 +15,35 @@ type Email struct {
 	Cc          []string
 }
 
+type EmailData struct {
+	URL string
+}
+
+type EmailService struct {
+	Emailer
+	*EmailTemplate
+}
+
+func (e *EmailService) SendMail(email Email, writer io.Writer) error {
+	err := e.SendEmail(email, writer)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func InitEmailService(emailer Emailer, emailTemplate *EmailTemplate) *EmailService {
+	return &EmailService{
+		emailer, emailTemplate,
+	}
+}
+
 type Emailer interface {
 	SendEmail(Email, io.Writer) error
 }
 
 type EmailTemplate struct {
-	emailHTMLTpl *template.Template
-}
-
-func SendMail(mailer Emailer, email Email, writer io.Writer) error {
-	err := mailer.SendEmail(email, writer)
-	if err != nil {
-		return err
-	}
-	return nil
+	EmailHTMLTpl *template.Template
 }
 
 var emailTplStrings = []string{
@@ -38,12 +53,12 @@ var emailTplStrings = []string{
 //go:embed email_templates
 var FS embed.FS
 
-func loadEmailTemplates() (tpl *EmailTemplate) {
+func LoadEmailTemplates() (tpl *EmailTemplate) {
 	tpl = &EmailTemplate{}
 	loadedTemplate := template.New("base")
 	templateStrings := getTemplatePaths(emailTplStrings, "email_templates")
 	loadedTemplate = template.Must(loadedTemplate.ParseFS(FS, templateStrings...))
-	tpl.emailHTMLTpl = loadedTemplate
+	tpl.EmailHTMLTpl = loadedTemplate
 	return tpl
 }
 
