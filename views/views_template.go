@@ -77,7 +77,7 @@ func (t *Template) ExecTemplate(w http.ResponseWriter, r *http.Request, baseTemp
 	}
 }
 
-var tplStrings = []string{
+var pageTplStrings = []string{
 	"home.gohtml",
 	"contact.gohtml",
 	"faq.gohtml",
@@ -129,7 +129,7 @@ func GetAdditionalTemplateData(userInfo models.UserInfo) func(filename string) (
 //go:embed templates/*
 var FS embed.FS
 
-func LoadTemplates() (tpl *Template) {
+func LoadPageTemplates() (tpl *Template) {
 	tpl = &Template{}
 	loadedTemplate := template.New("base")
 	//sets up basically an empty template, so that we can load functions in to it BEFORE we actually parse all the rest of templates
@@ -142,7 +142,7 @@ func LoadTemplates() (tpl *Template) {
 	)
 
 	//this is a placeholder function - we need this or else
-	templateStrings := getTemplatePaths(tplStrings, "templates")
+	templateStrings := getTemplatePaths(pageTplStrings, "templates")
 	loadedTemplate = TemplateMust(loadedTemplate.ParseFS(FS, templateStrings...))
 	tpl.htmlTpl = loadedTemplate
 	return tpl

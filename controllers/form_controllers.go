@@ -59,8 +59,9 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 		http.Redirect(w, r, "/user/about", http.StatusFound)
 	}
 }
-func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string) func(w http.ResponseWriter, r *http.Request) {
+func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer services.Emailer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("baseUrl: ", baseUrl)
 		email, err := ParseEmailFromForgetPasswordForm(r)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
@@ -84,7 +85,7 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string) func(w 
 	}
 }
 
-func HandlerResetPasswordForm(dbc *models.DBConnections, emailer services.Emailer) func(w http.ResponseWriter, r *http.Request) {
+func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("OK, the reset password form got submitted")
 

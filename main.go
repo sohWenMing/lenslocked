@@ -22,31 +22,19 @@ var baseUrl string
 var csrfSecretKey string
 
 func main() {
-	envVars, err := models.LoadEnv(".env")
-	if err != nil {
-		log.Fatal(err)
-	}
-	emailEnvs, err := envVars.LoadEmailEnvs()
-	if err != nil {
-		log.Fatal(err)
-	}
-	initGoMailer := gomailer.NewGoMailer(emailEnvs.Host, emailEnvs.Username, emailEnvs.Password, emailEnvs.Port)
-	envIsDev, err := envVars.GetIsDev()
-	if err != nil {
-		log.Fatal(err)
-	}
-	isDev = envIsDev
+	envVars := loadEnvVars()
 
-	envcsrfSecretKey, err := envVars.GetCSRFSecretKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-	csrfSecretKey = envcsrfSecretKey
+	emailEnvVars := getEmailEnvVars(envVars)
+	initGoMailer := gomailer.NewGoMailer(emailEnvVars.Host, emailEnvVars.Username, emailEnvVars.Password, emailEnvVars.Port)
+
+	setIsDev(envVars)
+	setCSRFSecretKey(envVars)
+	setBaseUrl(envVars)
+
 	dbc, err := models.InitDBConnections()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	err = models.Migrate(dbc.DB, "migrations", embedMigrations)
 	fmt.Println("running migrations on startup")
 	if err != nil {
@@ -56,7 +44,7 @@ func main() {
 
 	defer dbc.DB.Close()
 
-	template := views.LoadTemplates()
+	template := views.LoadPageTemplates()
 	//panic would occur if error occured during the loading of templates.
 
 	r := chi.NewRouter()
@@ -95,8 +83,8 @@ func main() {
 	r.Post("/signup", controllers.HandleSignupForm(dbc))
 	r.Post("/signin", controllers.HandleSignInForm(dbc))
 	r.Post("/signout", controllers.HandlerSignOut(dbc.SessionService, nil))
-	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, baseUrl))
-	r.Post("/reset_password_submit", controllers.HandlerResetPasswordForm(dbc, initGoMailer))
+	r.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, baseUrl, initGoMailer))
+	r.Post("/reset_password_submit", controllers.HandlerResetPasswordForm(dbc))
 
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)
@@ -105,4 +93,44 @@ func main() {
 
 	fmt.Println("Starting the server on :3000...")
 	log.Fatal(http.ListenAndServe(":3000", CSRFMw(r)))
+}
+
+func setBaseUrl(envVars *models.Envs) {
+	envBaseUrl, err := envVars.GetBaseURL()
+	if err != nil {
+		log.Fatal(err)
+	}
+	baseUrl = envBaseUrl
+}
+
+func setCSRFSecretKey(envVars *models.Envs) {
+	envcsrfSecretKey, err := envVars.GetCSRFSecretKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+	csrfSecretKey = envcsrfSecretKey
+}
+
+func setIsDev(envVars *models.Envs) {
+	envIsDev, err := envVars.GetIsDev()
+	if err != nil {
+		log.Fatal(err)
+	}
+	isDev = envIsDev
+}
+
+func getEmailEnvVars(envVars *models.Envs) *models.EmailEnvs {
+	emailEnvs, err := envVars.LoadEmailEnvs()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return emailEnvs
+}
+
+func loadEnvVars() *models.Envs {
+	envVars, err := models.LoadEnv(".env")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return envVars
 }
