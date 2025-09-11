@@ -62,7 +62,6 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 }
 func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer *services.EmailService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("baseUrl: ", baseUrl)
 		email, err := ParseEmailFromForgetPasswordForm(r)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
@@ -82,25 +81,23 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("newToken returned: ", newToken)
-		fmt.Println("userInfo: ", userInfo)
 		urlToReturn := fmt.Sprintf("%s/reset_password?token=%s", baseUrl, newToken.String())
 		fmt.Println("urlToReturn: ", urlToReturn)
 
 		emailData := services.EmailData{
 			URL: urlToReturn,
 		}
+
 		emailBuf := bytes.Buffer{}
 		err = emailer.EmailTemplate.EmailHTMLTpl.ExecuteTemplate(
 			&emailBuf, "reset_password_email.gohtml", emailData,
 		)
 		if err != nil {
 			fmt.Println("error: ", err)
+			// TODO: Implement logging function
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-
-		writeBuf := bytes.Buffer{}
 
 		emailer.SendMail(services.Email{
 			From:        "wenming.soh@gmail.com",
@@ -108,9 +105,7 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer
 			Content:     emailBuf.String(),
 			ContentType: "text/html",
 			Cc:          []string{},
-		}, &writeBuf)
-
-		fmt.Println("reusting email: ", writeBuf.String())
+		}, nil)
 
 		http.Redirect(w, r, "/check_email", http.StatusFound)
 	}
