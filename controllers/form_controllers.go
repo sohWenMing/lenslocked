@@ -1,11 +1,15 @@
 package controllers
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/sohWenMing/lenslocked/models"
+	"github.com/sohWenMing/lenslocked/services"
 )
 
 func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +60,7 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 		http.Redirect(w, r, "/user/about", http.StatusFound)
 	}
 }
-func HandleForgotPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer *services.EmailService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		email, err := ParseEmailFromForgetPasswordForm(r)
 		if err != nil {
@@ -67,10 +71,74 @@ func HandleForgotPasswordForm(dbc *models.DBConnections) func(w http.ResponseWri
 		if err != nil {
 			// TODO: Implement logging function
 			fmt.Println("error: ", err)
+			http.Redirect(w, r, "/check_email", http.StatusFound)
+			return
 		}
-		fmt.Println("userInfo: ", userInfo)
+		newToken, err := dbc.ForgotPWService.NewToken(userInfo.ID)
+		if err != nil {
+			// TODO: Implement logging function
+			fmt.Println("error: ", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		urlToReturn := fmt.Sprintf("%s/reset_password?token=%s", baseUrl, newToken.String())
+		fmt.Println("urlToReturn: ", urlToReturn)
+
+		emailData := services.EmailData{
+			URL: urlToReturn,
+		}
+
+		emailBuf := bytes.Buffer{}
+		err = emailer.EmailTemplate.EmailHTMLTpl.ExecuteTemplate(
+			&emailBuf, "reset_password_email.gohtml", emailData,
+		)
+		if err != nil {
+			fmt.Println("error: ", err)
+			// TODO: Implement logging function
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		emailer.SendMail(services.Email{
+			From:        "wenming.soh@gmail.com",
+			To:          email,
+			Content:     emailBuf.String(),
+			ContentType: "text/html",
+			Cc:          []string{},
+		}, nil)
+
 		http.Redirect(w, r, "/check_email", http.StatusFound)
 	}
+}
+
+func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("OK, the reset password form got submitted")
+
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+		}
+		fmt.Println("Form: ", r.Form)
+
+		err = validatePasswordReset(r.Form)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("passwords must match"))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Reached reset handler form"))
+	})
+}
+
+func validatePasswordReset(form url.Values) error {
+	confirmPassword := form.Get("confirm-password")
+	enterPassword := form.Get("enter-password")
+	if enterPassword != confirmPassword {
+		return errors.New("passwords must match")
+	}
+	return nil
 }
 
 func parseEmailAndPasswordFromForm(r *http.Request) (email, password string, err error) {

@@ -170,17 +170,25 @@ func CookieAuthMiddleWare(ss *models.SessionService, writer io.Writer, isRedirec
 /*
 UserContext object houses methods that allow user related operations on request context
 */
-
 type UserContext struct {
 	userService *models.UserService
 }
 
+/*
+NewUserContext returns pointer to a UserContext struct - which is a structure that has*
+methods for getting and setting of user information on a request context
+*/
 func NewUserContext(us *models.UserService) *UserContext {
 	return &UserContext{
 		us,
 	}
 }
 
+/*
+SetUserMW takes the userId from the request context and checks whether or not the user
+exists in the database. If the user does exist, then will move on the the next handler,
+else will redirect to sign in.
+*/
 func (uc *UserContext) SetUserMW() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

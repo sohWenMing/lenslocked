@@ -10,9 +10,10 @@ import (
 )
 
 type DBConnections struct {
-	UserService    *UserService
-	SessionService *SessionService
-	DB             *sql.DB
+	UserService     *UserService
+	SessionService  *SessionService
+	ForgotPWService *ForgotPWService
+	DB              *sql.DB
 }
 
 type pgConfig struct {
@@ -56,10 +57,14 @@ func InitDBConnections() (dbc *DBConnections, err error) {
 		db,
 		sessionServicePtr,
 	}
+	forgotEmailServicePtr := &ForgotPWService{
+		db,
+	}
 	fmt.Println("DB Connection has been initialised")
 	dbc = &DBConnections{
 		userServicePtr,
 		sessionServicePtr,
+		forgotEmailServicePtr,
 		db,
 	}
 	return dbc, nil
@@ -76,5 +81,4 @@ func Migrate(db *sql.DB, dir string, embedMigrations embed.FS) error {
 		return fmt.Errorf("migrate: %w", err)
 	}
 	return nil
-
 }
