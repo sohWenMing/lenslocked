@@ -13,11 +13,14 @@ import (
 	"github.com/sohWenMing/lenslocked/services"
 )
 
-func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+func HandleSignupForm(
+	dbc *models.DBConnections,
+	render func(w http.ResponseWriter, r *http.Request, fileName string, errorMsgs []string),
+) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		emailAddress, password, err := parseEmailAndPasswordFromForm(r)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
+			render(w, r, "signup.gohtml", []string{"form could not be parsed. please reload, and try again"})
 			return
 		}
 		newUserToCreate := models.UserEmailToPlainTextPassword{
@@ -26,7 +29,7 @@ func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 		}
 		user, err := dbc.UserService.CreateUser(newUserToCreate)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			render(w, r, "signup.gohtml", []string{err.Error()})
 			return
 		}
 		sessionInformation := user.Session
@@ -39,11 +42,13 @@ func HandleSignupForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 // closure function to allow access to the models.DBConnections type that returns a handler that can be used in main
 // program
 
-func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+func HandleSignInForm(dbc *models.DBConnections,
+	render func(w http.ResponseWriter, r *http.Request, fileName string, errorMsgs []string),
+) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		emailAddress, password, err := parseEmailAndPasswordFromForm(r)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
+			render(w, r, "signin.gohtml", []string{"form could not be parsed. please reload, and try again"})
 			return
 		}
 		userToPassword := models.UserEmailToPlainTextPassword{
@@ -53,7 +58,7 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 		loggedInUserInfo, err := dbc.UserService.LoginUser(userToPassword)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			render(w, r, "signin.gohtml", []string{"there was a problem with the username and password. please check and try again"})
 			return
 		}
 		sessionToken := loggedInUserInfo.Session.Token
@@ -61,29 +66,26 @@ func HandleSignInForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *
 		http.Redirect(w, r, "/user/about", http.StatusFound)
 	}
 }
-func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer *services.EmailService) func(w http.ResponseWriter, r *http.Request) {
+func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer *services.EmailService,
+	render func(w http.ResponseWriter, r *http.Request, fileName string, errorMsgs []string),
+) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		email, err := ParseEmailFromForgetPasswordForm(r)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("form could not be parsed: %s", err.Error()), http.StatusBadRequest)
+			render(w, r, "forgot_password.gohtml", []string{"form could not be parsed. please reload, and try again"})
 			return
 		}
 		userInfo, err := dbc.UserService.GetUserByEmail(strings.ToLower(email))
 		if err != nil {
-			// TODO: Implement logging function
-			fmt.Println("error: ", err)
-			http.Redirect(w, r, "/check_email", http.StatusFound)
+			render(w, r, "forgot_password.gohtml", []string{"No user exists with that email. Please try again"})
 			return
 		}
 		newToken, err := dbc.ForgotPWService.NewToken(userInfo.ID)
 		if err != nil {
-			// TODO: Implement logging function
-			fmt.Println("error: ", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			render(w, r, "forgot_password.gohtml", []string{"There was a problem with the request. Please try again."})
 			return
 		}
 		urlToReturn := fmt.Sprintf("%s/reset_password?token=%s", baseUrl, newToken.String())
-		fmt.Println("urlToReturn: ", urlToReturn)
 
 		emailData := services.EmailData{
 			URL: urlToReturn,
@@ -94,9 +96,7 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer
 			&emailBuf, "reset_password_email.gohtml", emailData,
 		)
 		if err != nil {
-			fmt.Println("error: ", err)
-			// TODO: Implement logging function
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			render(w, r, "forgot_password.gohtml", []string{"There was a problem with the request. Please try again."})
 			return
 		}
 
@@ -109,41 +109,39 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer
 		}, nil)
 
 		if err != nil {
-			fmt.Println("error: ", err)
-			// TODO: Implement logging function
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			render(w, r, "forgot_password.gohtml", []string{"There was a problem sending the email. Please try again in a while."})
 			return
 		}
-
 		http.Redirect(w, r, "/check_email", http.StatusFound)
 	}
 }
 
-func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
+func HandlerResetPasswordForm(dbc *models.DBConnections,
+	render func(w http.ResponseWriter, r *http.Request, fileName string, errorMsgs []string),
+) func(w http.ResponseWriter, r *http.Request) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		err := r.ParseForm()
 		if err != nil {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
+			render(w, r, "reset_password.gohtml", []string{"there was an error parsing the form"})
+			return
 		}
 
 		err = validatePasswordReset(r.Form)
 		if err != nil {
-			fmt.Println("err in validatePasswordReset: ", err)
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("passwords must match"))
+			render(w, r, "reset_password.gohtml", []string{"passwords must match"})
 			return
 		}
 
 		token, err := getForgotPWToken(r, dbc)
 		if err != nil {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
+			render(w, r, "reset_password.gohtml", []string{"this link has expired - please make a new request."})
 			return
 		}
 
 		isValid := token.CheckIsValid()
 		if !isValid {
-			http.Error(w, "Token is no longer valid. Please make another request to reset password", http.StatusBadRequest)
+			render(w, r, "reset_password.gohtml", []string{"this link has expired - please make a new request."})
 			return
 		}
 
@@ -151,20 +149,19 @@ func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWri
 
 		newHash, err := models.GenerateBcryptHash(confirmedPassword)
 		if err != nil {
-			http.Error(w, "Internal Error", http.StatusBadRequest)
+			render(w, r, "reset_password.gohtml", []string{"there was an internal error - please try again and contact support if the problem persists."})
 			return
 		}
-		fmt.Println("newHash: ", newHash)
 
 		err = dbc.ForgotPWService.DeleteForgetPasswordToken(token.UserId)
 		if err != nil {
-			http.Error(w, "Internal Error", http.StatusBadRequest)
+			render(w, r, "reset_password.gohtml", []string{"there was an internal error - please try again and contact support if the problem persists."})
 			return
 		}
 
 		err = dbc.UserService.UpdatePasswordHash(token.UserId, newHash)
 		if err != nil {
-			http.Error(w, "Internal Error", http.StatusBadRequest)
+			render(w, r, "reset_password.gohtml", []string{"there was an internal error - please try again and contact support if the problem persists."})
 			return
 		}
 

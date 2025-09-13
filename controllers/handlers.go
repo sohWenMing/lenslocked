@@ -18,58 +18,65 @@ type userContext interface {
 	GetUserInfoFromCtx(ctx context.Context) (userInfo models.UserInfo, isFound bool)
 }
 
-func InitTemplateHandler(template ExecutorTemplateWithCSRF, uc userContext) func(fileName string) http.HandlerFunc {
-	return func(fileName string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			userId, isFound := uc.GetUserIdFromCtx(r.Context())
-			if !isFound {
-				fmt.Println("userId not found")
-			}
-			userInfo, isFound := uc.GetUserInfoFromCtx(r.Context())
-			if !isFound {
-				fmt.Println("user info not found")
-			} else {
-				fmt.Println("user info from context: ", userInfo)
-			}
-			fmt.Println("filename: ", fileName)
+func InitTemplateHandler(template ExecutorTemplateWithCSRF, uc userContext) (
+	makeHandler func(fileName string) http.HandlerFunc,
+	render func(w http.ResponseWriter, r *http.Request, fileName string, errorMsgs []string),
+) {
+	render = func(w http.ResponseWriter, r *http.Request, fileName string, errorMsgs []string) {
+		userId, isFound := uc.GetUserIdFromCtx(r.Context())
+		if !isFound {
+			fmt.Println("userId not found")
+		}
+		userInfo, isFound := uc.GetUserInfoFromCtx(r.Context())
+		if !isFound {
+			fmt.Println("user info not found")
+		} else {
+			fmt.Println("user info from context: ", userInfo)
+		}
+		fmt.Println("filename: ", fileName)
 
-			otherPageData, err := views.GetAdditionalTemplateData(userInfo)(fileName)
-			if err != nil {
-				fmt.Println("error: ", err)
+		otherPageData, err := views.GetAdditionalTemplateData(userInfo)(fileName)
+		if err != nil {
+			fmt.Println("error: ", err)
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
+		pageData := views.PageData{
+			UserId:    userId,
+			OtherData: otherPageData,
+		}
+		if fileName == "signup.gohtml" || fileName == "sign.gohtml" {
+			signInSignUpFormData, ok := otherPageData.(views.SignInSignUpForm)
+			if !ok {
 				http.Error(w, "Bad request", http.StatusBadRequest)
 				return
 			}
-			pageData := views.PageData{
-				UserId:    userId,
-				OtherData: otherPageData,
-			}
-			if fileName == "signup.gohtml" || fileName == "sign.gohtml" {
-				signInSignUpFormData, ok := otherPageData.(views.SignInSignUpForm)
-				if !ok {
-					http.Error(w, "Bad request", http.StatusBadRequest)
-					return
-				}
-				updatedSignInSignUpFormData := setSignInSignUpFormData(r, signInSignUpFormData)
-				pageData.OtherData = updatedSignInSignUpFormData
-			}
+			updatedSignInSignUpFormData := setSignInSignUpFormData(r, signInSignUpFormData)
+			pageData.OtherData = updatedSignInSignUpFormData
+		}
 
-			if fileName == "reset_password.gohtml" {
-				resetPasswordFormData, ok := otherPageData.(views.ResetPasswordForm)
-				if !ok {
-					http.Error(w, "Bad request", http.StatusBadRequest)
-					return
-				}
-				resetPasswordToken := getTokenFromRequest(r)
-				resetPasswordFormData.ResetPasswordToken = resetPasswordToken
-				pageData.OtherData = resetPasswordFormData
+		if fileName == "reset_password.gohtml" {
+			resetPasswordFormData, ok := otherPageData.(views.ResetPasswordForm)
+			if !ok {
+				http.Error(w, "Bad request", http.StatusBadRequest)
+				return
 			}
+			resetPasswordToken := getTokenFromRequest(r)
+			resetPasswordFormData.ResetPasswordToken = resetPasswordToken
+			pageData.OtherData = resetPasswordFormData
+		}
 
-			csrfToken := GetCSRFTokenFromRequest(r)
-			// here what is happening is the middleware is actually getting the CSRF token from the context
-			w.Header().Set("content-type", "text/html")
-			template.ExecTemplateWithCSRF(w, r, csrfToken, fileName, pageData)
+		csrfToken := GetCSRFTokenFromRequest(r)
+		// here what is happening is the middleware is actually getting the CSRF token from the context
+		w.Header().Set("content-type", "text/html")
+		template.ExecTemplateWithCSRF(w, r, csrfToken, fileName, pageData, errorMsgs)
+	}
+	makeHandler = func(fileName string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			render(w, r, fileName, nil)
 		}
 	}
+	return makeHandler, render
 }
 
 func setSignInSignUpFormData(r *http.Request, signInSignUpFormData views.SignInSignUpForm) views.SignInSignUpForm {

@@ -10,5 +10,5 @@ type ExecutorTemplate interface {
 	// so in this way, anything that has the ExecTemplate function filfills this interface
 }
 type ExecutorTemplateWithCSRF interface {
-	ExecTemplateWithCSRF(w http.ResponseWriter, r *http.Request, csrfToken template.HTML, baseTemplate string, data any)
+	ExecTemplateWithCSRF(w http.ResponseWriter, r *http.Request, csrfToken template.HTML, baseTemplate string, data any, errorMsgs []string)
 }

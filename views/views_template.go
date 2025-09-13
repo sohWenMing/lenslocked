@@ -14,6 +14,32 @@ type Template struct {
 	htmlTpl *template.Template
 }
 
+// defines the data that will be passed in at execution time for each base template
+
+//go:embed templates/*
+var FS embed.FS
+
+func LoadPageTemplates() (tpl *Template) {
+	tpl = &Template{}
+	loadedTemplate := template.New("base")
+	//sets up basically an empty template, so that we can load functions in to it BEFORE we actually parse all the rest of templates
+	loadedTemplate = loadedTemplate.Funcs(
+		template.FuncMap{
+			"csrfField": func() template.HTML {
+				return `<input type="hidden" />`
+			},
+			"errors": func() []string {
+				return []string{}
+			},
+		},
+	)
+	//this is a placeholder function - we need this or else
+	templateStrings := getTemplatePaths(pageTplStrings, "templates")
+	loadedTemplate = TemplateMust(loadedTemplate.ParseFS(FS, templateStrings...))
+	tpl.htmlTpl = loadedTemplate
+	return tpl
+}
+
 /*
 The Template struct is used to house the type *template.Template so that a the method ExecTemplate can be
 attached to it.
@@ -31,7 +57,8 @@ func (t *Template) ExecTemplateWithCSRF(
 	r *http.Request,
 	csrfField template.HTML,
 	baseTemplate string,
-	data any) {
+	data any,
+	errorMsgs []string) {
 	cloned, err := t.htmlTpl.Clone()
 	if err != nil {
 		log.Printf("parsing template: %v", err)
@@ -44,6 +71,9 @@ func (t *Template) ExecTemplateWithCSRF(
 		template.FuncMap{
 			"csrfField": func() template.HTML {
 				return csrfField
+			},
+			"errors": func() []string {
+				return errorMsgs
 			},
 		},
 	)
@@ -91,6 +121,7 @@ var pageTplStrings = []string{
 	"forgot_password.gohtml",
 	"reset_password.gohtml",
 	"check_email.gohtml",
+	"test_alert.gohtml",
 }
 
 func GetAdditionalTemplateData(userInfo models.UserInfo) func(filename string) (data any, err error) {
@@ -118,34 +149,12 @@ func GetAdditionalTemplateData(userInfo models.UserInfo) func(filename string) (
 			return nil, nil
 		case "check_email.gohtml":
 			return nil, nil
+		case "test_alert.gohtml":
+			return nil, nil
 		default:
 			return nil, fmt.Errorf("data cannot be found for filename %s", filename)
 		}
 	}
-}
-
-// defines the data that will be passed in at execution time for each base template
-
-//go:embed templates/*
-var FS embed.FS
-
-func LoadPageTemplates() (tpl *Template) {
-	tpl = &Template{}
-	loadedTemplate := template.New("base")
-	//sets up basically an empty template, so that we can load functions in to it BEFORE we actually parse all the rest of templates
-	loadedTemplate = loadedTemplate.Funcs(
-		template.FuncMap{
-			"csrfField": func() template.HTML {
-				return `<input type="hidden" />`
-			},
-		},
-	)
-
-	//this is a placeholder function - we need this or else
-	templateStrings := getTemplatePaths(pageTplStrings, "templates")
-	loadedTemplate = TemplateMust(loadedTemplate.ParseFS(FS, templateStrings...))
-	tpl.htmlTpl = loadedTemplate
-	return tpl
 }
 
 /*
