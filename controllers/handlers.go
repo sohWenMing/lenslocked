@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/sohWenMing/lenslocked/helpers"
 	"github.com/sohWenMing/lenslocked/models"
 	"github.com/sohWenMing/lenslocked/views"
@@ -55,7 +53,19 @@ func InitTemplateHandler(template ExecutorTemplateWithCSRF, uc userContext) func
 				pageData.OtherData = updatedSignInSignUpFormData
 			}
 
+			if fileName == "reset_password.gohtml" {
+				resetPasswordFormData, ok := otherPageData.(views.ResetPasswordForm)
+				if !ok {
+					http.Error(w, "Bad request", http.StatusBadRequest)
+					return
+				}
+				resetPasswordToken := getTokenFromRequest(r)
+				resetPasswordFormData.ResetPasswordToken = resetPasswordToken
+				pageData.OtherData = resetPasswordFormData
+			}
+
 			csrfToken := GetCSRFTokenFromRequest(r)
+			// here what is happening is the middleware is actually getting the CSRF token from the context
 			w.Header().Set("content-type", "text/html")
 			template.ExecTemplateWithCSRF(w, r, csrfToken, fileName, pageData)
 		}
@@ -89,25 +99,28 @@ func TestHandler(testText string) http.HandlerFunc {
 
 func ResetPasswordHandler(fwps *models.ForgotPWService) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		queryParams := r.URL.Query()
-		token := queryParams.Get("token")
-		fmt.Println("query params: ", queryParams)
-		fmt.Println("token: ", token)
+		token := getTokenFromRequest(r)
 
-		uuid, err := uuid.Parse(token)
+		uuid, err := parseTokenStringToUUID(token)
 		if err != nil {
-			fmt.Println("error from parsing uuid: ", err)
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
 		}
 		returnedToken, err := fwps.GetForgotPWToken(uuid)
 		if err != nil {
-			fmt.Println("error: ", err)
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
 		}
-		expiry := returnedToken.GetExpiry()
-		fmt.Println("expiry: ", expiry)
-		fmt.Println("now time: ", time.Now())
+		isValid := returnedToken.CheckIsValid()
+		if !isValid {
+			http.Error(w, "The token for resetting of passord has expired. Please apply again.", http.StatusBadRequest)
+			return
+		}
+		tokenString := returnedToken.Token.String()
+		redirectUrl := fmt.Sprintf("/reset_password_form/?token=%s", tokenString)
 
 		//TODO - work on the error handling later, for now just test the redirect is working
-		http.Redirect(w, r, "/test_reset_pw_redirect", http.StatusFound)
+		http.Redirect(w, r, redirectUrl, http.StatusFound)
 	})
 }
 

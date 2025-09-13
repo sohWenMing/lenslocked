@@ -22,6 +22,11 @@ func (fpwt ForgotPasswordToken) GetExpiry() time.Time {
 	return fpwt.ExpiresOn
 }
 
+func (fpwt ForgotPasswordToken) CheckIsValid() bool {
+	expiry := fpwt.GetExpiry()
+	return expiry.Compare(time.Now()) == +1
+}
+
 func (fpws *ForgotPWService) NewToken(userId int) (newToken uuid.UUID, err error) {
 	newUUID := uuid.New()
 	expires_on := time.Now().Add(time.Duration(15 * time.Minute)).UTC()

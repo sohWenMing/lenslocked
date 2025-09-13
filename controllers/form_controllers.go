@@ -99,13 +99,20 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer
 			return
 		}
 
-		emailer.SendMail(services.Email{
+		err = emailer.SendMail(services.Email{
 			From:        "wenming.soh@gmail.com",
 			To:          email,
 			Content:     emailBuf.String(),
 			ContentType: "text/html",
 			Cc:          []string{},
 		}, nil)
+
+		if err != nil {
+			fmt.Println("error: ", err)
+			// TODO: Implement logging function
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 
 		http.Redirect(w, r, "/check_email", http.StatusFound)
 	}
@@ -114,6 +121,7 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer
 func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("OK, the reset password form got submitted")
+		// token := getTokenFromRequest(r)
 
 		err := r.ParseForm()
 		if err != nil {
@@ -127,6 +135,12 @@ func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWri
 			w.Write([]byte("passwords must match"))
 			return
 		}
+
+		// newHash, err := models.GenerateBcryptHash(r.Form.Get("confirm-password"))
+		// if err != nil {
+		// 	http.Error(w, "Internal Error", http.StatusBadRequest)
+		// }
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Reached reset handler form"))
 	})

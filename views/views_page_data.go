@@ -47,6 +47,7 @@ var ForgotPasswordFormData = ForgotPasswordForm{
 type ResetPasswordForm struct {
 	NewPasswordInputAttribs     inputHTMLAttribs
 	ConfirmPasswordInputAttribs inputHTMLAttribs
+	ResetPasswordToken          string
 }
 
 var ResetPasswordFormData = ResetPasswordForm{
@@ -70,6 +71,7 @@ var ResetPasswordFormData = ResetPasswordForm{
 		true,
 		"",
 	},
+	ResetPasswordToken: "",
 }
 
 type PageData struct {
@@ -89,4 +91,8 @@ func (s *SignInSignUpForm) SetEmailValue(input string) {
 }
 func (s *SignInSignUpForm) SetPasswordValue(input string) {
 	s.PasswordInputAttribs.Value = input
+}
+
+type ResetPasswordTokenInfo struct {
+	ResetPasswordToken string
 }
