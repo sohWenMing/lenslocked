@@ -14,6 +14,7 @@ type ForgotPWService struct {
 
 type ForgotPasswordToken struct {
 	Id        int
+	UserId    int
 	Token     uuid.UUID
 	ExpiresOn time.Time
 }
@@ -25,6 +26,19 @@ func (fpwt ForgotPasswordToken) GetExpiry() time.Time {
 func (fpwt ForgotPasswordToken) CheckIsValid() bool {
 	expiry := fpwt.GetExpiry()
 	return expiry.Compare(time.Now()) == +1
+}
+
+func (fpws *ForgotPWService) DeleteForgetPasswordToken(userId int) error {
+	_, err := fpws.db.Exec(
+		`
+		DELETE FROM forgot_password_tokens
+		WHERE user_id = ($1);
+		`, userId)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 func (fpws *ForgotPWService) NewToken(userId int) (newToken uuid.UUID, err error) {
@@ -49,12 +63,12 @@ func (fpws *ForgotPWService) GetForgotPWToken(token uuid.UUID) (ForgotPasswordTo
 	fmt.Println("token: ", token)
 	row := fpws.db.QueryRow(
 		`
-		SELECT id, token, expires_on FROM forgot_password_tokens
+		SELECT id, user_id, token, expires_on FROM forgot_password_tokens
 		WHERE token=($1)
 		`, token,
 	)
 	var fpwToken ForgotPasswordToken
-	err := row.Scan(&fpwToken.Id, &fpwToken.Token, &fpwToken.ExpiresOn)
+	err := row.Scan(&fpwToken.Id, &fpwToken.UserId, &fpwToken.Token, &fpwToken.ExpiresOn)
 	if err != nil {
 		return ForgotPasswordToken{}, err
 	}

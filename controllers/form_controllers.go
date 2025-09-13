@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/sohWenMing/lenslocked/models"
 	"github.com/sohWenMing/lenslocked/services"
 )
@@ -120,30 +121,67 @@ func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer
 
 func HandlerResetPasswordForm(dbc *models.DBConnections) func(w http.ResponseWriter, r *http.Request) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("OK, the reset password form got submitted")
-		// token := getTokenFromRequest(r)
 
 		err := r.ParseForm()
 		if err != nil {
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 		}
-		fmt.Println("Form: ", r.Form)
 
 		err = validatePasswordReset(r.Form)
 		if err != nil {
+			fmt.Println("err in validatePasswordReset: ", err)
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("passwords must match"))
 			return
 		}
 
-		// newHash, err := models.GenerateBcryptHash(r.Form.Get("confirm-password"))
-		// if err != nil {
-		// 	http.Error(w, "Internal Error", http.StatusBadRequest)
-		// }
+		token, err := getForgotPWToken(r, dbc)
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		isValid := token.CheckIsValid()
+		if !isValid {
+			http.Error(w, "Token is no longer valid. Please make another request to reset password", http.StatusBadRequest)
+			return
+		}
+
+		confirmedPassword := r.Form.Get("confirm-password")
+
+		newHash, err := models.GenerateBcryptHash(confirmedPassword)
+		if err != nil {
+			http.Error(w, "Internal Error", http.StatusBadRequest)
+			return
+		}
+		fmt.Println("newHash: ", newHash)
+
+		err = dbc.ForgotPWService.DeleteForgetPasswordToken(token.UserId)
+		if err != nil {
+			http.Error(w, "Internal Error", http.StatusBadRequest)
+			return
+		}
+
+		err = dbc.UserService.UpdatePasswordHash(token.UserId, newHash)
+		if err != nil {
+			http.Error(w, "Internal Error", http.StatusBadRequest)
+			return
+		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Reached reset handler form"))
+		w.Write([]byte("Password has been reset, please login"))
 	})
+}
+
+func getForgotPWToken(r *http.Request, dbc *models.DBConnections) (models.ForgotPasswordToken, error) {
+	var forgotPasswordToken models.ForgotPasswordToken
+	token := r.Form.Get("forgot_password_token")
+	tokenUUID, err := uuid.Parse(token)
+	if err != nil {
+		return forgotPasswordToken, nil
+	}
+	forgotPasswordToken, err = dbc.ForgotPWService.GetForgotPWToken(tokenUUID)
+	return forgotPasswordToken, err
 }
 
 func validatePasswordReset(form url.Values) error {

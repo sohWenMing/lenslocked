@@ -97,33 +97,6 @@ func TestHandler(testText string) http.HandlerFunc {
 	}
 }
 
-func ResetPasswordHandler(fwps *models.ForgotPWService) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := getTokenFromRequest(r)
-
-		uuid, err := parseTokenStringToUUID(token)
-		if err != nil {
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			return
-		}
-		returnedToken, err := fwps.GetForgotPWToken(uuid)
-		if err != nil {
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			return
-		}
-		isValid := returnedToken.CheckIsValid()
-		if !isValid {
-			http.Error(w, "The token for resetting of passord has expired. Please apply again.", http.StatusBadRequest)
-			return
-		}
-		tokenString := returnedToken.Token.String()
-		redirectUrl := fmt.Sprintf("/reset_password_form/?token=%s", tokenString)
-
-		//TODO - work on the error handling later, for now just test the redirect is working
-		http.Redirect(w, r, redirectUrl, http.StatusFound)
-	})
-}
-
 func TestSendCookie(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("email")
 	if err != nil {
