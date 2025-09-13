@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/sohWenMing/lenslocked/helpers"
 	"github.com/sohWenMing/lenslocked/models"
 	"github.com/sohWenMing/lenslocked/views"
@@ -55,7 +53,19 @@ func InitTemplateHandler(template ExecutorTemplateWithCSRF, uc userContext) func
 				pageData.OtherData = updatedSignInSignUpFormData
 			}
 
+			if fileName == "reset_password.gohtml" {
+				resetPasswordFormData, ok := otherPageData.(views.ResetPasswordForm)
+				if !ok {
+					http.Error(w, "Bad request", http.StatusBadRequest)
+					return
+				}
+				resetPasswordToken := getTokenFromRequest(r)
+				resetPasswordFormData.ResetPasswordToken = resetPasswordToken
+				pageData.OtherData = resetPasswordFormData
+			}
+
 			csrfToken := GetCSRFTokenFromRequest(r)
+			// here what is happening is the middleware is actually getting the CSRF token from the context
 			w.Header().Set("content-type", "text/html")
 			template.ExecTemplateWithCSRF(w, r, csrfToken, fileName, pageData)
 		}
@@ -85,30 +95,6 @@ func TestHandler(testText string) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, testText)
 	}
-}
-
-func ResetPasswordHandler(fwps *models.ForgotPWService) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		queryParams := r.URL.Query()
-		token := queryParams.Get("token")
-		fmt.Println("query params: ", queryParams)
-		fmt.Println("token: ", token)
-
-		uuid, err := uuid.Parse(token)
-		if err != nil {
-			fmt.Println("error from parsing uuid: ", err)
-		}
-		returnedToken, err := fwps.GetForgotPWToken(uuid)
-		if err != nil {
-			fmt.Println("error: ", err)
-		}
-		expiry := returnedToken.GetExpiry()
-		fmt.Println("expiry: ", expiry)
-		fmt.Println("now time: ", time.Now())
-
-		//TODO - work on the error handling later, for now just test the redirect is working
-		http.Redirect(w, r, "/test_reset_pw_redirect", http.StatusFound)
-	})
 }
 
 func TestSendCookie(w http.ResponseWriter, r *http.Request) {

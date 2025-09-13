@@ -42,6 +42,25 @@ type UserService struct {
 	*SessionService
 }
 
+func (us *UserService) UpdatePasswordHash(userId int, hash string) error {
+	result, err := us.db.Exec(`
+	UPDATE users
+	SET password_hash = ($1)
+	WHERE id = ($2);
+	`, hash, userId)
+	if err != nil {
+		return err
+	}
+	numRowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if numRowsAffected != 1 {
+		return errors.New("more than one row was affected when updating password hash")
+	}
+	return nil
+}
+
 func (us *UserService) CreateUser(newUserToCreate UserEmailToPlainTextPassword) (*UserIdToSession, error) {
 	err := validateEmailAndPassword(newUserToCreate.Email, newUserToCreate.PlainTextPassword)
 	if err != nil {

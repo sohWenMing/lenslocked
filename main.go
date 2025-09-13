@@ -66,8 +66,7 @@ func main() {
 		sr.Get("/check_email", templateHandler("check_email.gohtml"))
 		sr.Get("/", templateHandler("home.gohtml"))
 		sr.Get("/forgot_password", templateHandler("forgot_password.gohtml"))
-		sr.Get("/reset_password", controllers.ResetPasswordHandler(dbc.ForgotPWService))
-		sr.Get("/test_reset_pw_redirect", templateHandler("reset_password.gohtml"))
+		sr.Get("/reset_password", templateHandler("reset_password.gohtml"))
 	})
 
 	// these are protected routes, so we use the CookieAuthMiddleWare to test for existence of logged in user and redirect
