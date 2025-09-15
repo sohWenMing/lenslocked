@@ -20,6 +20,7 @@ const (
 	NoUserWithUserId
 	NoRowsErrorOnRefreshSession
 	NewSessionNotReturned
+	NoGalleryFound
 )
 
 func (e sqlNoRowsErrEnum) String() string {
@@ -32,6 +33,8 @@ func (e sqlNoRowsErrEnum) String() string {
 		return "no rows were returned when attempting to refresh session"
 	case NewSessionNotReturned:
 		return "no session was returned after attempting to create session"
+	case NoGalleryFound:
+		return "no gallery was found with the input gallery Id"
 	default:
 		return "unrecognized error, please check actual error"
 	}

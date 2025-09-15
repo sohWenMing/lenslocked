@@ -1,6 +1,9 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+)
 
 // Gallery houses fields that map to database structure that defines a gallery
 type Gallery struct {
@@ -17,6 +20,7 @@ type GalleryService struct {
 // Creates a new gallery based on input title and userId. Returns pointer to a Gallery struct if successful, else
 // returns nil and error
 func (service *GalleryService) Create(title string, userId int) (*Gallery, error) {
+	fmt.Println("user id entered: ", userId)
 
 	gallery := Gallery{
 		UserID: userId,
@@ -50,4 +54,20 @@ func (service *GalleryService) DeleteById(galleryId int) error {
 		return err
 	}
 	return nil
+}
+
+func (service *GalleryService) GetById(galleryId int) (*Gallery, error) {
+	row := service.DB.QueryRow(
+		`SELECT galleries.id, galleries.user_id, galleries.title
+		FROM galleries
+		WHERE galleries.id = ($1)
+		;
+		`, galleryId,
+	)
+	var gallery Gallery
+	err := row.Scan(&gallery.ID, &gallery.UserID, &gallery.Title)
+	if err != nil {
+		return nil, HandlePgError(err, &sqlNoRowsErrStruct{NoGalleryFound})
+	}
+	return &gallery, nil
 }
