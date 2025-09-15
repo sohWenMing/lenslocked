@@ -71,3 +71,18 @@ func (service *GalleryService) GetById(galleryId int) (*Gallery, error) {
 	}
 	return &gallery, nil
 }
+func (service *GalleryService) getByUserId(userId int) (*Gallery, error) {
+	row := service.DB.QueryRow(
+		`SELECT galleries.id, galleries.user_id, galleries.title
+		FROM galleries
+		WHERE galleries.user_id = ($1)
+		;
+		`, userId,
+	)
+	var gallery Gallery
+	err := row.Scan(&gallery.ID, &gallery.UserID, &gallery.Title)
+	if err != nil {
+		return nil, HandlePgError(err, &sqlNoRowsErrStruct{NoGalleryFound})
+	}
+	return &gallery, nil
+}
