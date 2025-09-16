@@ -20,7 +20,6 @@ type GalleryService struct {
 // Creates a new gallery based on input title and userId. Returns pointer to a Gallery struct if successful, else
 // returns nil and error
 func (service *GalleryService) Create(title string, userId int) (*Gallery, error) {
-	fmt.Println("user id entered: ", userId)
 
 	gallery := Gallery{
 		UserID: userId,
@@ -71,7 +70,7 @@ func (service *GalleryService) GetById(galleryId int) (*Gallery, error) {
 	}
 	return &gallery, nil
 }
-func (service *GalleryService) getByUserId(userId int) (*Gallery, error) {
+func (service *GalleryService) GetByUserId(userId int) (*Gallery, error) {
 	row := service.DB.QueryRow(
 		`SELECT galleries.id, galleries.user_id, galleries.title
 		FROM galleries
@@ -85,4 +84,25 @@ func (service *GalleryService) getByUserId(userId int) (*Gallery, error) {
 		return nil, HandlePgError(err, &sqlNoRowsErrStruct{NoGalleryFound})
 	}
 	return &gallery, nil
+}
+func (service *GalleryService) UpdateTitle(id int, title string) (err error) {
+	result, err := service.DB.Exec(
+		`
+		UPDATE galleries
+		SET title = ($1)
+		WHERE id = ($2);
+		`, title, id,
+	)
+	if err != nil {
+		return fmt.Errorf("update gallery title %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("update gallery title %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows were affected - gallery id passed in: %d", id)
+	}
+	return nil
 }

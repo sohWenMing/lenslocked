@@ -203,7 +203,7 @@ func TestGetGalleryByUserId(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gallery, err := dbc.GalleryService.getByUserId(test.galleryUserId)
+			gallery, err := dbc.GalleryService.GetByUserId(test.galleryUserId)
 			switch test.isErrExpected {
 			case true:
 				if err == nil {
@@ -228,6 +228,76 @@ func TestGetGalleryByUserId(t *testing.T) {
 		})
 	}
 
+}
+func TestUpdateGalleryTitle(t *testing.T) {
+	userIdToSession, shouldReturn := CreateTestUser(t)
+	if shouldReturn {
+		return
+	}
+	defer dbc.UserService.DeleteUserAndSession(userIdToSession.UserID)
+	//we're making the assumption here that the create function should work without problems, so we just create one to run the retrieval tests
+	gallery, err := dbc.GalleryService.Create("initial_test_gallery", userIdToSession.UserID)
+	if err != nil {
+		t.Errorf("didn't expect error, got %v\n", err)
+		return
+	}
+	defer dbc.GalleryService.DeleteById(gallery.ID)
+
+	type test struct {
+		name                 string
+		expectedGalleryTitle string
+		expectedRowsAffected int
+		galleryId            int
+		isErrExpected        bool
+	}
+
+	tests := []test{
+		{
+			name:                 "test should pass",
+			expectedGalleryTitle: "updated_test_gallery",
+			expectedRowsAffected: 1,
+			galleryId:            gallery.ID,
+			isErrExpected:        false,
+		},
+		{
+			name:                 "test should fail because of 0 gallery id",
+			expectedGalleryTitle: "test_gallery",
+			expectedRowsAffected: 0,
+			galleryId:            0,
+			isErrExpected:        true,
+		},
+		{
+			name:                 "test should fail because of non existent gallery id",
+			expectedGalleryTitle: "test_gallery",
+			expectedRowsAffected: 0,
+			galleryId:            gallery.ID + 1,
+			isErrExpected:        true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := dbc.GalleryService.UpdateTitle(test.galleryId, test.expectedGalleryTitle)
+			switch test.isErrExpected {
+			case true:
+				if err == nil {
+					t.Errorf("expected error, didn't get one")
+				}
+			case false:
+				if err != nil {
+					t.Errorf("didn't expect error, got %v\n", err)
+					return
+				}
+				retrievedGallery, err := dbc.GalleryService.GetById(gallery.ID)
+				if err != nil {
+					t.Errorf("didn't expect error, got %v\n", err)
+				}
+				if retrievedGallery.Title != test.expectedGalleryTitle {
+					t.Errorf("got %s want %s\n", retrievedGallery.Title, test.expectedGalleryTitle)
+				}
+			}
+		})
+	}
 }
 
 func CreateTestUser(t *testing.T) (*UserIdToSession, bool) {
