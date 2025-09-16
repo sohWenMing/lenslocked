@@ -13,6 +13,7 @@ type DBConnections struct {
 	UserService     *UserService
 	SessionService  *SessionService
 	ForgotPWService *ForgotPWService
+	GalleryService  *GalleryService
 	DB              *sql.DB
 }
 
@@ -60,11 +61,15 @@ func InitDBConnections() (dbc *DBConnections, err error) {
 	forgotEmailServicePtr := &ForgotPWService{
 		db,
 	}
+	galleryServicePtr := &GalleryService{
+		db,
+	}
 	fmt.Println("DB Connection has been initialised")
 	dbc = &DBConnections{
 		userServicePtr,
 		sessionServicePtr,
 		forgotEmailServicePtr,
+		galleryServicePtr,
 		db,
 	}
 	return dbc, nil
