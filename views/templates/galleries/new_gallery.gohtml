@@ -4,7 +4,7 @@
     <h1 class="p-8 pt-4 text-3xl text-gray-800">
     Create A New Gallery
     </h1>
-    <form action="/galleries" method="post">
+    <form action="/galleries/new" method="post">
         {{ csrfField }}
         {{ template "input" .NewGalleryData.FirstInput}}
         <div class="py-4">

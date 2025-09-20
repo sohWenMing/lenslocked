@@ -104,7 +104,9 @@ func main() {
 			sr.Use(userContext.SetUserMW())
 			sr.Get("/new_gallery", galleries.New)
 			sr.Get("/{id}/edit", galleries.Edit(dbc.GalleryService))
-			sr.Post("/", galleries.Create)
+			sr.Post("/new", galleries.Create)
+			sr.Post("/edit", galleries.HandleEdit(dbc.GalleryService))
+			sr.Post("/{id}/delete", galleries.HandleDelete(dbc.GalleryService))
 		})
 	})
 

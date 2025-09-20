@@ -78,20 +78,12 @@ func initNewGalleryData(userId int) NewGalleryData {
 func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		csrfToken := GetCSRFTokenFromRequest(r)
-		userId, _ := GetUserIdFromRequestContext(r)
-		id := chi.URLParam(r, "id")
-		fmt.Println("id: ", id)
-
-		galleryId, err := strconv.Atoi(id)
-		if err != nil {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
-		gallery, err := gs.GetById(galleryId)
+		gallery, err := getGalleryByRequestGalleryId(r, gs)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		userId, _ := GetUserIdFromRequestContext(r)
 		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "edit_gallery.gohtml", initEditGalleryData(userId, gallery.ID, gallery.Title), nil)
 	}
 }
@@ -110,5 +102,96 @@ func initEditGalleryData(userId int, galleryId int, loadTitleValue string) EditG
 	}
 }
 
+func (g *Galleries) HandleEdit(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userId, _ := GetUserIdFromRequestContext(r)
+
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
+		}
+		id := r.Form.Get("gallery-id")
+		galleryId, err := strconv.Atoi(id)
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		title := r.Form.Get("title")
+		if title == "" {
+			http.Error(w, "Mandatory information not filled", http.StatusBadRequest)
+			return
+		}
+		gallery, err := gs.GetById(galleryId)
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		if gallery.UserID != userId {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		err = gs.UpdateTitle(galleryId, title)
+		if err != nil {
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("we managed to edit the gallery"))
+	}
+}
+func (g *Galleries) HandleDelete(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userId, _ := GetUserIdFromRequestContext(r)
+
+		gallery, err := getGalleryByRequestGalleryId(r, gs)
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		if gallery.UserID != userId {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		err = gs.DeleteById(gallery.ID)
+		if err != nil {
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("We managed to delete the gallery"))
+	}
+}
+
 //we want to create a value that:
 // checks that the the user id, and title is submitted
+
+func getGalleryByRequestGalleryId(r *http.Request, galleryService *models.GalleryService) (gallery *models.Gallery, err error) {
+	galleryId, err := getGalleryIdFromRequest(r)
+	if err != nil {
+		fmt.Println("err: ", err.Error())
+		return nil, err
+	}
+	gallery, err = getGalleryById(galleryId, galleryService)
+	if err != nil {
+		return nil, err
+	}
+	return gallery, nil
+}
+
+func getGalleryIdFromRequest(r *http.Request) (galleryId int, err error) {
+	id := chi.URLParam(r, "id")
+	galleryId, err = strconv.Atoi(id)
+	if err != nil {
+		return 0, err
+	}
+	return galleryId, nil
+}
+
+func getGalleryById(galleryId int, galleryService *models.GalleryService) (gallery *models.Gallery, err error) {
+	gallery, err = galleryService.GetById(galleryId)
+	if err != nil {
+		return nil, err
+	}
+	return gallery, nil
+}
