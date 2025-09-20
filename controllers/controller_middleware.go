@@ -60,7 +60,10 @@ func CSRFProtect(isDev bool, secretKey string) func(http.Handler) http.Handler {
 		csrf.Secure(isSetSecure),
 		csrf.TrustedOrigins([]string{
 			"localhost:3000",
-		}))
+		},
+		),
+		csrf.Path("/"),
+	)
 }
 
 func GetCSRFTokenFromRequest(r *http.Request) template.HTML {

@@ -51,3 +51,21 @@ func InitNewGalleryData() NewGalleryData {
 		firstInputHtmlAttribs,
 	}
 }
+
+type EditGalleryData struct {
+	FirstInput inputHTMLAttribs
+}
+
+func InitEditGalleryData(loadValue string) EditGalleryData {
+	firstInputHtmlAttribs := inputHTMLAttribs{}
+	firstInputHtmlAttribs.SetName("title")
+	firstInputHtmlAttribs.SetId("title")
+	firstInputHtmlAttribs.SetInputType("text")
+	firstInputHtmlAttribs.SetPlaceHolder("Gallery Title")
+	firstInputHtmlAttribs.SetLabelText("Title")
+	firstInputHtmlAttribs.SetValue(loadValue)
+	firstInputHtmlAttribs.SetIsRequired(true)
+	return EditGalleryData{
+		firstInputHtmlAttribs,
+	}
+}

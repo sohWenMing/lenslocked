@@ -54,7 +54,15 @@ func main() {
 		&views.GalleryTemplateConstructor{},
 		views.GalleryFS,
 		[]string{"tailwind_widgets.gohtml",
-			"galleries/new_gallery.gohtml"},
+			"galleries/new_gallery.gohtml",
+		},
+		"templates")
+	galleries.ConstructEditTemplate(
+		&views.GalleryTemplateConstructor{},
+		views.GalleryFS,
+		[]string{"tailwind_widgets.gohtml",
+			"galleries/edit_gallery.gohtml",
+		},
 		"templates")
 	//panic would occur if error occured during the loading of templates.
 
@@ -95,10 +103,7 @@ func main() {
 			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
 			sr.Use(userContext.SetUserMW())
 			sr.Get("/new_gallery", galleries.New)
-			sr.Get("/{id}/edit", func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("We managed to get to the edit endpoint!"))
-			})
+			sr.Get("/{id}/edit", galleries.Edit(dbc.GalleryService))
 			sr.Post("/", galleries.Create)
 		})
 	})
