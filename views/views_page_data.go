@@ -14,6 +14,7 @@ var SignUpSignInFormData = SignInSignUpForm{
 		"Email",
 		true,
 		"",
+		false,
 	},
 	PasswordInputAttribs: inputHTMLAttribs{
 		"password",
@@ -24,6 +25,7 @@ var SignUpSignInFormData = SignInSignUpForm{
 		"Password",
 		true,
 		"",
+		false,
 	},
 }
 
@@ -41,6 +43,7 @@ var ForgotPasswordFormData = ForgotPasswordForm{
 		"Email",
 		true,
 		"",
+		false,
 	},
 }
 
@@ -60,6 +63,7 @@ var ResetPasswordFormData = ResetPasswordForm{
 		"Enter Password",
 		true,
 		"",
+		false,
 	},
 	ConfirmPasswordInputAttribs: inputHTMLAttribs{
 		"confirm-password",
@@ -70,6 +74,7 @@ var ResetPasswordFormData = ResetPasswordForm{
 		"Confirm Password",
 		true,
 		"",
+		false,
 	},
 	ResetPasswordToken: "",
 }

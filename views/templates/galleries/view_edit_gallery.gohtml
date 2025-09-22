@@ -1,0 +1,34 @@
+
+{{ template "header" . }}
+<div class="p-8 w-full">
+    <h1 class="p-8 pt-4 text-3xl text-gray-800">
+    {{ if eq .OtherGalleryData.GalleryFunction "edit" }}
+    Edit Gallery
+    {{ end }}
+    </h1>
+    {{ if eq .OtherGalleryData.GalleryFunction "edit"}}
+    <form action="/galleries/edit" method="post">
+        {{ csrfField }}
+        <input type="hidden" name="gallery-id" value="{{ .GalleryId }}">
+        {{ template "input" .OtherGalleryData.TitleInput}}
+
+        <div class="py-4">
+            <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">
+            Update Gallery
+        </button>
+        </div>
+        </form>
+        <form action="/galleries/{{ .GalleryId }}/delete" method="post">
+            {{ csrfField }}
+            <div class="py-4">
+                <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">
+                Delete Gallery
+            </button>
+            </div>
+        </form>
+    {{ else }}
+        {{ template "input" .OtherGalleryData.TitleInput}}
+    {{ end }}
+</div>
+
+{{ template "footer"}}

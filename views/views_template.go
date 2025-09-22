@@ -17,9 +17,9 @@ type Template struct {
 // defines the data that will be passed in at execution time for each base template
 
 //go:embed templates/*
-var FS embed.FS
+var MainPagesFS embed.FS
 
-func LoadPageTemplates() (tpl *Template) {
+func LoadPageTemplates(embeddedFileSystem embed.FS, embedFolderName string) (tpl *Template) {
 	tpl = &Template{}
 	loadedTemplate := template.New("base")
 	//sets up basically an empty template, so that we can load functions in to it BEFORE we actually parse all the rest of templates
@@ -34,8 +34,8 @@ func LoadPageTemplates() (tpl *Template) {
 		},
 	)
 	//this is a placeholder function - we need this or else
-	templateStrings := getTemplatePaths(pageTplStrings, "templates")
-	loadedTemplate = TemplateMust(loadedTemplate.ParseFS(FS, templateStrings...))
+	templateStrings := getTemplatePaths(pageTplStrings, embedFolderName)
+	loadedTemplate = TemplateMust(loadedTemplate.ParseFS(embeddedFileSystem, templateStrings...))
 	tpl.htmlTpl = loadedTemplate
 	return tpl
 }
@@ -155,28 +155,4 @@ func GetAdditionalTemplateData(userInfo models.UserInfo) func(filename string) (
 			return nil, fmt.Errorf("data cannot be found for filename %s", filename)
 		}
 	}
-}
-
-/*
-used to load up and parse all templates at the beginning of execution of the program
-TemplateMust function will panic any error found during parsing, which will shut down execution of the program
-*/
-
-func getTemplatePaths(tplStrings []string, baseFolderName string) []string {
-	fmt.Println("tplStrings: ", tplStrings)
-	fullPaths := make([]string, len(tplStrings))
-	for i, tplString := range tplStrings {
-		fullPath := fmt.Sprintf("%s/%s", baseFolderName, tplString)
-		fullPaths[i] = fullPath
-	}
-	return fullPaths
-}
-
-// helper function - used to create the final string slice of template paths that will be parsed
-
-func TemplateMust(t *template.Template, err error) *template.Template {
-	if err != nil {
-		panic(err)
-	}
-	return t
 }

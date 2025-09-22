@@ -46,14 +46,38 @@ func main() {
 
 	defer dbc.DB.Close()
 
-	template := views.LoadPageTemplates()
+	mainPagesTemplate := views.LoadPageTemplates(views.MainPagesFS, "templates")
+
+	galleries := &controllers.Galleries{}
+	galleries.GalleryService = dbc.GalleryService
+	galleries.ConstructNewTemplate(
+		&views.GalleryTemplateConstructor{},
+		views.GalleryFS,
+		[]string{"tailwind_widgets.gohtml",
+			"galleries/new_gallery.gohtml",
+		},
+		"templates")
+	galleries.ConstructEditTemplate(
+		&views.GalleryTemplateConstructor{},
+		views.GalleryFS,
+		[]string{"tailwind_widgets.gohtml",
+			"galleries/view_edit_gallery.gohtml",
+		},
+		"templates")
+	galleries.ConstructListTemplate(
+		&views.GalleryTemplateConstructor{},
+		views.GalleryFS,
+		[]string{"tailwind_widgets.gohtml",
+			"galleries/gallery_index.gohtml",
+		},
+		"templates")
 	//panic would occur if error occured during the loading of templates.
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
 	userContext := controllers.NewUserContext(dbc.UserService)
-	makeHandler, render := controllers.InitTemplateHandler(template, userContext)
+	makeHandler, render := controllers.InitTemplateHandler(mainPagesTemplate, userContext)
 
 	// ##### Get Method Handlers #####
 	// these are not protected routes, so we just use the CookieAuthMiddleWare to test for existence of logged in user
@@ -80,6 +104,19 @@ func main() {
 		sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
 		sr.Use(userContext.SetUserMW())
 		sr.Get("/about", makeHandler("user_info.gohtml"))
+	})
+	r.Route("/galleries", func(sr chi.Router) {
+		sr.Get("/{id}", galleries.View(dbc.GalleryService))
+		sr.Group(func(sr chi.Router) {
+			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
+			sr.Use(userContext.SetUserMW())
+			sr.Get("/new_gallery", galleries.New)
+			sr.Get("/{id}/edit", galleries.Edit(dbc.GalleryService))
+			sr.Get("/list", galleries.List)
+			sr.Post("/new", galleries.Create)
+			sr.Post("/edit", galleries.HandleEdit(dbc.GalleryService))
+			sr.Post("/{id}/delete", galleries.HandleDelete(dbc.GalleryService))
+		})
 	})
 
 	r.Get("/test_cookie", makeHandler("test_cookie.gohtml"))

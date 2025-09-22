@@ -70,6 +70,34 @@ func (service *GalleryService) GetById(galleryId int) (*Gallery, error) {
 	}
 	return &gallery, nil
 }
+
+func (service *GalleryService) GetGalleryListByUserId(userId int) ([]*Gallery, error) {
+	rows, err := service.DB.Query(
+		`SELECT galleries.id, galleries.user_id, galleries.title
+		FROM galleries
+		WHERE galleries.user_id = ($1)
+		;
+		`, userId,
+	)
+	returnedGalleries := []*Gallery{}
+	if err != nil {
+		return returnedGalleries, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		galleryToAppend := Gallery{}
+		err := rows.Scan(&galleryToAppend.ID, &galleryToAppend.UserID, &galleryToAppend.Title)
+		if err != nil {
+			return []*Gallery{}, err
+		}
+		returnedGalleries = append(returnedGalleries, &galleryToAppend)
+	}
+	err = rows.Err()
+	if err != nil {
+		return []*Gallery{}, err
+	}
+	return returnedGalleries, err
+}
 func (service *GalleryService) GetByUserId(userId int) (*Gallery, error) {
 	row := service.DB.QueryRow(
 		`SELECT galleries.id, galleries.user_id, galleries.title

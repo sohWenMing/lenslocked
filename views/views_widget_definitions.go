@@ -9,6 +9,7 @@ type inputHTMLAttribs struct {
 	LabelText    string
 	IsRequired   bool
 	Value        string
+	IsDisabled   bool
 }
 
 func (i *inputHTMLAttribs) SetName(input string) {
@@ -29,11 +30,14 @@ func (i *inputHTMLAttribs) SetAutoComplete(input string) {
 func (i *inputHTMLAttribs) SetLabelText(input string) {
 	i.LabelText = input
 }
-func (i *inputHTMLAttribs) SetIsRequired(input bool) {
-	i.IsRequired = input
+func (i *inputHTMLAttribs) SetIsRequired() {
+	i.IsRequired = true
 }
 func (i *inputHTMLAttribs) SetValue(input string) {
 	i.Value = input
+}
+func (i *inputHTMLAttribs) SetIsDisabled() {
+	i.IsDisabled = true
 }
 
 type checkBoxHTMLAttribs struct {
