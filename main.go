@@ -61,7 +61,7 @@ func main() {
 		&views.GalleryTemplateConstructor{},
 		views.GalleryFS,
 		[]string{"tailwind_widgets.gohtml",
-			"galleries/view_edit_gallery.gohtml",
+			"galleries/edit_gallery.gohtml",
 		},
 		"templates")
 	galleries.ConstructListTemplate(

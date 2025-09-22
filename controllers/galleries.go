@@ -121,7 +121,7 @@ func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, 
 		if userId != gallery.UserID {
 			http.Error(w, "User is not owner of gallery", http.StatusBadRequest)
 		}
-		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "view_edit_gallery.gohtml", initEditGalleryData(userId, gallery.ID, gallery.Title), nil)
+		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "edit_gallery.gohtml", initEditGalleryData(userId, gallery.ID, gallery.Title), nil)
 	}
 }
 func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +135,7 @@ func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, 
 		userId, _ := GetUserIdFromRequestContext(r)
 		data := initViewGalleryData(userId, gallery.ID, gallery.Title)
 		fmt.Println("data sent in: ", data)
-		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "view_edit_gallery.gohtml", initViewGalleryData(userId, gallery.ID, gallery.Title), nil)
+		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "edit_gallery.gohtml", initViewGalleryData(userId, gallery.ID, gallery.Title), nil)
 	}
 }
 

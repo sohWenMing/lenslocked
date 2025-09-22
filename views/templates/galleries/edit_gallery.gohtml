@@ -2,11 +2,8 @@
 {{ template "header" . }}
 <div class="p-8 w-full">
     <h1 class="p-8 pt-4 text-3xl text-gray-800">
-    {{ if eq .OtherGalleryData.GalleryFunction "edit" }}
     Edit Gallery
-    {{ end }}
     </h1>
-    {{ if eq .OtherGalleryData.GalleryFunction "edit"}}
     <form action="/galleries/edit" method="post">
         {{ csrfField }}
         <input type="hidden" name="gallery-id" value="{{ .GalleryId }}">
@@ -26,9 +23,6 @@
             </button>
             </div>
         </form>
-    {{ else }}
-        {{ template "input" .OtherGalleryData.TitleInput}}
-    {{ end }}
 </div>
 
 {{ template "footer"}}
