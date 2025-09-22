@@ -118,6 +118,9 @@ func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, 
 			return
 		}
 		userId, _ := GetUserIdFromRequestContext(r)
+		if userId != gallery.UserID {
+			http.Error(w, "User is not owner of gallery", http.StatusBadRequest)
+		}
 		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "view_edit_gallery.gohtml", initEditGalleryData(userId, gallery.ID, gallery.Title), nil)
 	}
 }
