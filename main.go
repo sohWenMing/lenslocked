@@ -71,6 +71,13 @@ func main() {
 			"galleries/gallery_index.gohtml",
 		},
 		"templates")
+	galleries.ConstructViewTemplate(
+		&views.GalleryTemplateConstructor{},
+		views.GalleryFS,
+		[]string{"tailwind_widgets.gohtml",
+			"galleries/view_gallery.gohtml",
+		},
+		"templates")
 	//panic would occur if error occured during the loading of templates.
 
 	r := chi.NewRouter()

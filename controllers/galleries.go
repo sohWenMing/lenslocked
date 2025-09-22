@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -20,6 +21,7 @@ type Galleries struct {
 		New  *views.Template
 		Edit *views.Template
 		List *views.Template
+		View *views.Template
 	}
 	GalleryService *models.GalleryService
 }
@@ -33,6 +35,9 @@ func (g *Galleries) ConstructEditTemplate(constructor GalleryTemplateConstructor
 }
 func (g *Galleries) ConstructListTemplate(constructor GalleryTemplateConstructor, fs embed.FS, templateStrings []string, baseFolderName string) {
 	g.Templates.List = constructor.ConstructTemplate(fs, templateStrings, baseFolderName)
+}
+func (g *Galleries) ConstructViewTemplate(constructor GalleryTemplateConstructor, fs embed.FS, templateStrings []string, baseFolderName string) {
+	g.Templates.View = constructor.ConstructTemplate(fs, templateStrings, baseFolderName)
 }
 
 type GalleryTemplateConstructor interface {
@@ -133,9 +138,7 @@ func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, 
 			return
 		}
 		userId, _ := GetUserIdFromRequestContext(r)
-		data := initViewGalleryData(userId, gallery.ID, gallery.Title)
-		fmt.Println("data sent in: ", data)
-		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "edit_gallery.gohtml", initViewGalleryData(userId, gallery.ID, gallery.Title), nil)
+		g.Templates.View.ExecTemplateWithCSRF(w, r, csrfToken, "view_gallery.gohtml", initViewGalleryData(userId, gallery.ID, gallery.Title), nil)
 	}
 }
 
@@ -145,6 +148,11 @@ type GalleryData struct {
 	OtherGalleryData any
 }
 
+func (g *GalleryData) String() string {
+	jsonBytes, _ := json.MarshalIndent(g, "", "")
+	return string(jsonBytes)
+}
+
 func initEditGalleryData(userId int, galleryId int, loadTitleValue string) GalleryData {
 	return GalleryData{
 		UserId:           userId,
@@ -152,11 +160,21 @@ func initEditGalleryData(userId int, galleryId int, loadTitleValue string) Galle
 		OtherGalleryData: views.InitEditGalleryData(loadTitleValue),
 	}
 }
-func initViewGalleryData(userId int, galleryId int, loadTitleValue string) GalleryData {
+func initViewGalleryData(userId int, galleryId int, galleryTitle string) GalleryData {
 	return GalleryData{
-		UserId:           userId,
-		GalleryId:        galleryId,
-		OtherGalleryData: views.InitViewGalleryData(loadTitleValue),
+		UserId:    userId,
+		GalleryId: galleryId,
+		OtherGalleryData: struct {
+			Title     string
+			ImageUrls []string
+		}{
+			galleryTitle,
+			[]string{
+				"https://t3.ftcdn.net/jpg/02/31/17/32/240_F_231173210_stzZNH7tblr3esfej44EpbKqAQfbkfsT.jpg",
+				"https://t3.ftcdn.net/jpg/01/04/40/06/240_F_104400672_zCaPIFbYT1dXdzN85jso7NV8M6uwpKtf.jpg",
+				"https://t3.ftcdn.net/jpg/03/33/02/86/240_F_333028697_Qfq7IE9NCWQYrlBjliLLymomCCvffLOv.jpg",
+			},
+		},
 	}
 }
 
