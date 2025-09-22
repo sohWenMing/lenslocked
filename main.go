@@ -61,7 +61,14 @@ func main() {
 		&views.GalleryTemplateConstructor{},
 		views.GalleryFS,
 		[]string{"tailwind_widgets.gohtml",
-			"galleries/edit_gallery.gohtml",
+			"galleries/view_edit_gallery.gohtml",
+		},
+		"templates")
+	galleries.ConstructListTemplate(
+		&views.GalleryTemplateConstructor{},
+		views.GalleryFS,
+		[]string{"tailwind_widgets.gohtml",
+			"galleries/gallery_index.gohtml",
 		},
 		"templates")
 	//panic would occur if error occured during the loading of templates.
@@ -99,11 +106,13 @@ func main() {
 		sr.Get("/about", makeHandler("user_info.gohtml"))
 	})
 	r.Route("/galleries", func(sr chi.Router) {
+		sr.Get("/{id}", galleries.View(dbc.GalleryService))
 		sr.Group(func(sr chi.Router) {
 			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
 			sr.Use(userContext.SetUserMW())
 			sr.Get("/new_gallery", galleries.New)
 			sr.Get("/{id}/edit", galleries.Edit(dbc.GalleryService))
+			sr.Get("/list", galleries.List)
 			sr.Post("/new", galleries.Create)
 			sr.Post("/edit", galleries.HandleEdit(dbc.GalleryService))
 			sr.Post("/{id}/delete", galleries.HandleDelete(dbc.GalleryService))

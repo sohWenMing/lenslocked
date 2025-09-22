@@ -63,7 +63,7 @@ func HandleSignInForm(dbc *models.DBConnections,
 		}
 		sessionToken := loggedInUserInfo.Session.Token
 		SetSessionCookietoResponseWriter(sessionToken, w)
-		http.Redirect(w, r, "/user/about", http.StatusFound)
+		http.Redirect(w, r, "/galleries/list", http.StatusFound)
 	}
 }
 func HandleForgotPasswordForm(dbc *models.DBConnections, baseUrl string, emailer *services.EmailService,

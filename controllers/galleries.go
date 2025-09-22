@@ -19,6 +19,7 @@ type Galleries struct {
 	Templates struct {
 		New  *views.Template
 		Edit *views.Template
+		List *views.Template
 	}
 	GalleryService *models.GalleryService
 }
@@ -30,9 +31,43 @@ func (g *Galleries) ConstructNewTemplate(constructor GalleryTemplateConstructor,
 func (g *Galleries) ConstructEditTemplate(constructor GalleryTemplateConstructor, fs embed.FS, templateStrings []string, baseFolderName string) {
 	g.Templates.Edit = constructor.ConstructTemplate(fs, templateStrings, baseFolderName)
 }
+func (g *Galleries) ConstructListTemplate(constructor GalleryTemplateConstructor, fs embed.FS, templateStrings []string, baseFolderName string) {
+	g.Templates.List = constructor.ConstructTemplate(fs, templateStrings, baseFolderName)
+}
 
 type GalleryTemplateConstructor interface {
 	ConstructTemplate(fs embed.FS, templateStrings []string, baseFolderName string) *views.Template
+}
+
+type GalleryListing struct {
+	Id    int
+	Title string
+}
+type GalleryListData struct {
+	UserId          int
+	GalleryListings []GalleryListing
+}
+
+func (g *Galleries) List(w http.ResponseWriter, r *http.Request) {
+	userId, _ := GetUserIdFromRequestContext(r)
+	csrfToken := GetCSRFTokenFromRequest(r)
+	galleries, err := g.GalleryService.GetGalleryListByUserId(userId)
+	fmt.Println("galleries: ", galleries)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+	galleryListings := make([]GalleryListing, len(galleries))
+	for i, gallery := range galleries {
+		galleryListings[i] = GalleryListing{
+			Id:    gallery.ID,
+			Title: gallery.Title,
+		}
+	}
+	galleryData := GalleryListData{
+		userId, galleryListings,
+	}
+	g.Templates.List.ExecTemplateWithCSRF(w, r, csrfToken, "gallery_index.gohtml", galleryData, nil)
 }
 
 /*
@@ -59,13 +94,12 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 		g.Templates.New.ExecTemplateWithCSRF(w, r, csrfToken, "new_gallery.gohtml", initNewGalleryData(userId), []string{err.Error()})
 		return
 	}
-	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
-	http.Redirect(w, r, editPath, http.StatusFound)
+	http.Redirect(w, r, getEditPath(gallery.ID), http.StatusFound)
 }
 
 type NewGalleryData struct {
 	UserId         int
-	NewGalleryData views.NewGalleryData
+	NewGalleryData views.GalleryData
 }
 
 func initNewGalleryData(userId int) NewGalleryData {
@@ -84,21 +118,42 @@ func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, 
 			return
 		}
 		userId, _ := GetUserIdFromRequestContext(r)
-		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "edit_gallery.gohtml", initEditGalleryData(userId, gallery.ID, gallery.Title), nil)
+		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "view_edit_gallery.gohtml", initEditGalleryData(userId, gallery.ID, gallery.Title), nil)
+	}
+}
+func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		csrfToken := GetCSRFTokenFromRequest(r)
+		gallery, err := getGalleryByRequestGalleryId(r, gs)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		userId, _ := GetUserIdFromRequestContext(r)
+		data := initViewGalleryData(userId, gallery.ID, gallery.Title)
+		fmt.Println("data sent in: ", data)
+		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "view_edit_gallery.gohtml", initViewGalleryData(userId, gallery.ID, gallery.Title), nil)
 	}
 }
 
-type EditGalleryData struct {
-	UserId          int
-	GalleryId       int
-	EditGalleryData views.EditGalleryData
+type GalleryData struct {
+	UserId           int
+	GalleryId        int
+	OtherGalleryData any
 }
 
-func initEditGalleryData(userId int, galleryId int, loadTitleValue string) EditGalleryData {
-	return EditGalleryData{
-		UserId:          userId,
-		GalleryId:       galleryId,
-		EditGalleryData: views.InitEditGalleryData(loadTitleValue),
+func initEditGalleryData(userId int, galleryId int, loadTitleValue string) GalleryData {
+	return GalleryData{
+		UserId:           userId,
+		GalleryId:        galleryId,
+		OtherGalleryData: views.InitEditGalleryData(loadTitleValue),
+	}
+}
+func initViewGalleryData(userId int, galleryId int, loadTitleValue string) GalleryData {
+	return GalleryData{
+		UserId:           userId,
+		GalleryId:        galleryId,
+		OtherGalleryData: views.InitViewGalleryData(loadTitleValue),
 	}
 }
 
@@ -136,8 +191,7 @@ func (g *Galleries) HandleEdit(gs *models.GalleryService) func(w http.ResponseWr
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("we managed to edit the gallery"))
+		http.Redirect(w, r, "/galleries/list", http.StatusFound)
 	}
 }
 func (g *Galleries) HandleDelete(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
@@ -158,8 +212,7 @@ func (g *Galleries) HandleDelete(gs *models.GalleryService) func(w http.Response
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("We managed to delete the gallery"))
+		http.Redirect(w, r, "/galleries/list", http.StatusFound)
 	}
 }
 
@@ -194,4 +247,9 @@ func getGalleryById(galleryId int, galleryService *models.GalleryService) (galle
 		return nil, err
 	}
 	return gallery, nil
+}
+
+func getEditPath(galleryId int) string {
+	editPath := fmt.Sprintf("/galleries/%d/edit", galleryId)
+	return editPath
 }

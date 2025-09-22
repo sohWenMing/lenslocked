@@ -35,37 +35,53 @@ func (n *GalleryTemplateConstructor) ConstructTemplate(fs embed.FS, templateStri
 	return tpl
 }
 
-type NewGalleryData struct {
-	FirstInput inputHTMLAttribs
+type GalleryData struct {
+	GalleryFunction string
+	TitleInput      inputHTMLAttribs
 }
 
-func InitNewGalleryData() NewGalleryData {
-	firstInputHtmlAttribs := inputHTMLAttribs{}
-	firstInputHtmlAttribs.SetName("title")
-	firstInputHtmlAttribs.SetId("title")
-	firstInputHtmlAttribs.SetInputType("text")
-	firstInputHtmlAttribs.SetPlaceHolder("Gallery Title")
-	firstInputHtmlAttribs.SetLabelText("Title")
-	firstInputHtmlAttribs.SetIsRequired(true)
-	return NewGalleryData{
-		firstInputHtmlAttribs,
+func InitNewGalleryData() GalleryData {
+	return GalleryData{
+		"new",
+		setInputHTMLAttribs(setInputHTMlAttribsValues{"", false, true}),
 	}
 }
 
-type EditGalleryData struct {
-	FirstInput inputHTMLAttribs
+func InitEditGalleryData(loadValue string) GalleryData {
+	return GalleryData{
+		"edit",
+		setInputHTMLAttribs(setInputHTMlAttribsValues{loadValue, false, true}),
+	}
 }
 
-func InitEditGalleryData(loadValue string) EditGalleryData {
-	firstInputHtmlAttribs := inputHTMLAttribs{}
-	firstInputHtmlAttribs.SetName("title")
-	firstInputHtmlAttribs.SetId("title")
-	firstInputHtmlAttribs.SetInputType("text")
-	firstInputHtmlAttribs.SetPlaceHolder("Gallery Title")
-	firstInputHtmlAttribs.SetLabelText("Title")
-	firstInputHtmlAttribs.SetValue(loadValue)
-	firstInputHtmlAttribs.SetIsRequired(true)
-	return EditGalleryData{
-		firstInputHtmlAttribs,
+func InitViewGalleryData(loadValue string) GalleryData {
+	return GalleryData{
+		"view",
+		setInputHTMLAttribs(setInputHTMlAttribsValues{loadValue, true, false}),
 	}
+}
+
+type setInputHTMlAttribsValues struct {
+	loadValue     string
+	isSetDisabled bool
+	isSetRequired bool
+}
+
+func setInputHTMLAttribs(s setInputHTMlAttribsValues) inputHTMLAttribs {
+	titleInputHTMLAttribs := inputHTMLAttribs{}
+	titleInputHTMLAttribs.SetName("title")
+	titleInputHTMLAttribs.SetId("title")
+	titleInputHTMLAttribs.SetInputType("text")
+	titleInputHTMLAttribs.SetPlaceHolder("Gallery Title")
+	titleInputHTMLAttribs.SetLabelText("Title")
+	if s.loadValue != "" {
+		titleInputHTMLAttribs.SetValue(s.loadValue)
+	}
+	if s.isSetDisabled {
+		titleInputHTMLAttribs.SetIsDisabled()
+	}
+	if s.isSetRequired {
+		titleInputHTMLAttribs.SetIsRequired()
+	}
+	return titleInputHTMLAttribs
 }

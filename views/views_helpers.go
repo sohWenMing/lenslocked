@@ -11,7 +11,6 @@ TemplateMust function will panic any error found during parsing, which will shut
 */
 
 func getTemplatePaths(tplStrings []string, baseFolderName string) []string {
-	fmt.Println("tplStrings: ", tplStrings)
 	fullPaths := make([]string, len(tplStrings))
 	for i, tplString := range tplStrings {
 		fullPath := fmt.Sprintf("%s/%s", baseFolderName, tplString)
