@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -161,6 +162,17 @@ func initEditGalleryData(userId int, galleryId int, loadTitleValue string) Galle
 	}
 }
 func initViewGalleryData(userId int, galleryId int, galleryTitle string) GalleryData {
+	fmt.Println("### testing of glob function ###")
+
+	globPattern := fmt.Sprintf("./images/gallery-%d/*", galleryId)
+	fmt.Println("### globpath: ###", globPattern)
+	filePaths, err := getImagesPaths(globPattern)
+	if err != nil {
+		panic(err)
+	}
+	for i, filePath := range filePaths {
+		filePaths[i] = fmt.Sprintf("/%s", filePath)
+	}
 	return GalleryData{
 		UserId:    userId,
 		GalleryId: galleryId,
@@ -169,13 +181,18 @@ func initViewGalleryData(userId int, galleryId int, galleryTitle string) Gallery
 			ImageUrls []string
 		}{
 			galleryTitle,
-			[]string{
-				"https://t3.ftcdn.net/jpg/02/31/17/32/240_F_231173210_stzZNH7tblr3esfej44EpbKqAQfbkfsT.jpg",
-				"https://t3.ftcdn.net/jpg/01/04/40/06/240_F_104400672_zCaPIFbYT1dXdzN85jso7NV8M6uwpKtf.jpg",
-				"https://t3.ftcdn.net/jpg/03/33/02/86/240_F_333028697_Qfq7IE9NCWQYrlBjliLLymomCCvffLOv.jpg",
-			},
+			filePaths,
 		},
 	}
+}
+
+func getImagesPaths(globPattern string) (filepaths []string, err error) {
+	files, err := filepath.Glob(globPattern)
+	if err != nil {
+		return []string{}, err
+	}
+	return files, nil
+
 }
 
 func (g *Galleries) HandleEdit(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {

@@ -62,7 +62,7 @@ func InitDBConnections() (dbc *DBConnections, err error) {
 		db,
 	}
 	galleryServicePtr := &GalleryService{
-		db,
+		db, "",
 	}
 	fmt.Println("DB Connection has been initialised")
 	dbc = &DBConnections{

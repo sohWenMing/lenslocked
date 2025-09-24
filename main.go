@@ -79,9 +79,9 @@ func main() {
 		},
 		"templates")
 	//panic would occur if error occured during the loading of templates.
-
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Handle("/images/*", http.StripPrefix("/images/", models.LoadImageFileServer("./images")))
 
 	userContext := controllers.NewUserContext(dbc.UserService)
 	makeHandler, render := controllers.InitTemplateHandler(mainPagesTemplate, userContext)

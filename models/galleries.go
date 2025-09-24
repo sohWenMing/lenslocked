@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"path/filepath"
 )
 
 // Gallery houses fields that map to database structure that defines a gallery
@@ -14,11 +15,20 @@ type Gallery struct {
 
 // Service that allows for gallery to have a connection to sql.DB methods, to be able to run database commands
 type GalleryService struct {
-	DB *sql.DB
+	DB        *sql.DB
+	ImagesDir string
 }
 
 // Creates a new gallery based on input title and userId. Returns pointer to a Gallery struct if successful, else
 // returns nil and error
+func (service *GalleryService) GalleryDir(id int) string {
+	imagesDir := service.ImagesDir
+	if imagesDir == "" {
+		imagesDir = "images"
+	}
+	return filepath.Join(imagesDir, fmt.Sprintf("gallery-%d", id))
+}
+
 func (service *GalleryService) Create(title string, userId int) (*Gallery, error) {
 
 	gallery := Gallery{

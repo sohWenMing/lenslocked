@@ -1,0 +1,105 @@
+.
+├── cmd
+│   ├── bcrypt
+│   │   ├── bcrypter
+│   │   └── bcrypt.go
+│   └── exp
+│       ├── exp.go
+│       ├── hello.gohtml
+│       └── test_files
+│           └── test.txt
+├── controllers
+│   ├── controller_email.go
+│   ├── controller_helpers.go
+│   ├── controller_middleware.go
+│   ├── cookie.go
+│   ├── form_controllers.go
+│   ├── galleries.go
+│   ├── handlers.go
+│   ├── handlers_test.go
+│   ├── reset_token_handling.go
+│   └── template.go
+├── docker-compose.yml
+├── gomailer
+│   └── gomailer.go
+├── go.mod
+├── go.sum
+├── helpers
+│   ├── helpers.go
+│   └── helpers_test.go
+├── images
+│   └── gallery-59
+│       ├── 66818934372__7B4089FC-18EA-43DF-B080-67B34239D0AE.jpg
+│       ├── IMG_1188.jpg
+│       ├── IMG_1875.jpg
+│       ├── IMG_2788.jpg
+│       ├── IMG_2816.jpg
+│       ├── IMG_2912.jpg
+│       ├── IMG_4232.jpg
+│       ├── IMG_4493.jpg
+│       ├── IMG_4?89.png
+│       ├── IMG_7184.jpg
+│       ├── IMG_8238.jpg
+│       └── IMG_8243.jpg
+├── integration_testing
+│   ├── email_integration_test.go
+│   └── integration_test.go
+├── main.go
+├── Makefile
+├── migrations
+│   ├── 00001_users.sql
+│   ├── 00002_sessions.sql
+│   ├── 00003_change_email_sessions.sql
+│   └── 00004_galleries.sql
+├── modd.conf
+├── models
+│   ├── bcrypt.go
+│   ├── error_handlers.go
+│   ├── faq.go
+│   ├── forgot_password.go
+│   ├── galleries.go
+│   ├── galleries_test.go
+│   ├── load_env.go
+│   ├── main_test.go
+│   ├── service_connectors.go
+│   ├── session.go
+│   ├── session_test.go
+│   ├── user.go
+│   └── user_test.go
+├── README.md
+├── server
+├── services
+│   ├── emailer.go
+│   ├── emailer_test.go
+│   └── email_templates
+│       └── reset_password_email.gohtml
+├── tree_output.txt
+└── views
+    ├── practice_form.go
+    ├── templates
+    │   ├── check_email.gohtml
+    │   ├── contact.gohtml
+    │   ├── faq.gohtml
+    │   ├── forgot_password.gohtml
+    │   ├── galleries
+    │   │   ├── edit_gallery.gohtml
+    │   │   ├── gallery_index.gohtml
+    │   │   ├── new_gallery.gohtml
+    │   │   └── view_gallery.gohtml
+    │   ├── home.gohtml
+    │   ├── persona.gohtml
+    │   ├── practice_form.gohtml
+    │   ├── reset_password.gohtml
+    │   ├── signin.gohtml
+    │   ├── signup.gohtml
+    │   ├── tailwind_widgets.gohtml
+    │   ├── test_alert.gohtml
+    │   ├── test_cookie.gohtml
+    │   └── user_info.gohtml
+    ├── views_galleries.go
+    ├── views_helpers.go
+    ├── views_page_data.go
+    ├── views_template.go
+    └── views_widget_definitions.go
+
+18 directories, 85 files
