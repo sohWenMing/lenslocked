@@ -3,8 +3,10 @@ package controllers
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -138,9 +140,37 @@ func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, 
 			return
 		}
 		userId, _ := GetUserIdFromRequestContext(r)
-		fmt.Println("userId retrieved: ", userId)
-		g.Templates.View.ExecTemplateWithCSRF(w, r, csrfToken, "view_gallery.gohtml", initViewGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions()), nil)
+		galleryData, err := initViewGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions())
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		g.Templates.View.ExecTemplateWithCSRF(w, r, csrfToken, "view_gallery.gohtml", galleryData, nil)
 	}
+}
+
+func ServeImage() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			galleryIdString := chi.URLParam(r, "id")
+			galleryId, err := strconv.Atoi(galleryIdString)
+			if err != nil {
+				http.Error(w, "Bad request", http.StatusBadRequest)
+				return
+			}
+			fileName := chi.URLParam(r, "filename")
+
+			filePath := fmt.Sprintf("./images/%d/%s", galleryId, fileName)
+			if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+				http.Error(w, "file does not exist", http.StatusNotFound)
+				return
+			} else if err != nil {
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			} else {
+				http.ServeFile(w, r, filePath)
+			}
+		})
 }
 
 type GalleryData struct {
@@ -161,14 +191,15 @@ func initEditGalleryData(userId int, galleryId int, loadTitleValue string) Galle
 		OtherGalleryData: views.InitEditGalleryData(loadTitleValue),
 	}
 }
-func initViewGalleryData(userId int, galleryId int, galleryTitle string, exts []string) GalleryData {
-	globPattern := fmt.Sprintf("./images/gallery-%d/*", galleryId)
-	filePaths, err := models.GetImagePaths(globPattern, exts)
+
+func initViewGalleryData(userId int, galleryId int, galleryTitle string, exts []string) (GalleryData, error) {
+	galleryImages, err := models.GetImagesByGalleryId(galleryId, exts)
 	if err != nil {
-		panic(err)
+		return GalleryData{}, err
 	}
-	for i, filePath := range filePaths {
-		filePaths[i] = fmt.Sprintf("/%s", filePath)
+	filePaths := make([]string, len(galleryImages))
+	for i, galleryImage := range galleryImages {
+		filePaths[i] = galleryImage.GetPath()
 	}
 	return GalleryData{
 		UserId:    userId,
@@ -180,7 +211,7 @@ func initViewGalleryData(userId int, galleryId int, galleryTitle string, exts []
 			galleryTitle,
 			filePaths,
 		},
-	}
+	}, nil
 }
 
 func (g *Galleries) HandleEdit(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {

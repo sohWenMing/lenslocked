@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sohWenMing/lenslocked/controllers"
 	"github.com/sohWenMing/lenslocked/gomailer"
 	"github.com/sohWenMing/lenslocked/models"
@@ -80,8 +79,8 @@ func main() {
 		"templates")
 	//panic would occur if error occured during the loading of templates.
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Handle("/images/*", http.StripPrefix("/images/", models.LoadImageFileServer("./images")))
+	// r.Use(middleware.Logger)
+	// r.Handle("/images/*", http.StripPrefix("/images/", models.LoadImageFileServer("./images")))
 
 	userContext := controllers.NewUserContext(dbc.UserService)
 	makeHandler, render := controllers.InitTemplateHandler(mainPagesTemplate, userContext)
@@ -117,6 +116,7 @@ func main() {
 			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, false, false))
 			sr.Use(userContext.SetUserMW())
 			sr.Get("/{id}", galleries.View(dbc.GalleryService))
+			sr.Handle("/{id}/images/{filename}", controllers.ServeImage())
 		})
 		sr.Group(func(sr chi.Router) {
 			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
