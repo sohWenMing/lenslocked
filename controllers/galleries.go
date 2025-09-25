@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -139,7 +138,8 @@ func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, 
 			return
 		}
 		userId, _ := GetUserIdFromRequestContext(r)
-		g.Templates.View.ExecTemplateWithCSRF(w, r, csrfToken, "view_gallery.gohtml", initViewGalleryData(userId, gallery.ID, gallery.Title), nil)
+		fmt.Println("userId retrieved: ", userId)
+		g.Templates.View.ExecTemplateWithCSRF(w, r, csrfToken, "view_gallery.gohtml", initViewGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions()), nil)
 	}
 }
 
@@ -161,12 +161,9 @@ func initEditGalleryData(userId int, galleryId int, loadTitleValue string) Galle
 		OtherGalleryData: views.InitEditGalleryData(loadTitleValue),
 	}
 }
-func initViewGalleryData(userId int, galleryId int, galleryTitle string) GalleryData {
-	fmt.Println("### testing of glob function ###")
-
+func initViewGalleryData(userId int, galleryId int, galleryTitle string, exts []string) GalleryData {
 	globPattern := fmt.Sprintf("./images/gallery-%d/*", galleryId)
-	fmt.Println("### globpath: ###", globPattern)
-	filePaths, err := getImagesPaths(globPattern)
+	filePaths, err := models.GetImagePaths(globPattern, exts)
 	if err != nil {
 		panic(err)
 	}
@@ -184,15 +181,6 @@ func initViewGalleryData(userId int, galleryId int, galleryTitle string) Gallery
 			filePaths,
 		},
 	}
-}
-
-func getImagesPaths(globPattern string) (filepaths []string, err error) {
-	files, err := filepath.Glob(globPattern)
-	if err != nil {
-		return []string{}, err
-	}
-	return files, nil
-
 }
 
 func (g *Galleries) HandleEdit(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {

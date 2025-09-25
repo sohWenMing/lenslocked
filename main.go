@@ -113,7 +113,11 @@ func main() {
 		sr.Get("/about", makeHandler("user_info.gohtml"))
 	})
 	r.Route("/galleries", func(sr chi.Router) {
-		sr.Get("/{id}", galleries.View(dbc.GalleryService))
+		sr.Group(func(sr chi.Router) {
+			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, false, false))
+			sr.Use(userContext.SetUserMW())
+			sr.Get("/{id}", galleries.View(dbc.GalleryService))
+		})
 		sr.Group(func(sr chi.Router) {
 			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
 			sr.Use(userContext.SetUserMW())

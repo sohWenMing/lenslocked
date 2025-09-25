@@ -196,13 +196,8 @@ func (uc *UserContext) SetUserMW() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userId := r.Context().Value(userIdKey).(int)
-			userInfo, err := uc.userService.GetUserById(userId)
-			if err != nil {
-				fmt.Println("error on getting userInfo: ", err)
-				redirectToSignIn(w, r)
-				//TODO: Implement logging function
-				fmt.Println(err)
-			}
+
+			userInfo, _ := uc.userService.GetUserById(userId)
 			ctx := context.WithValue(r.Context(), userInfoKey, userInfo)
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
@@ -248,9 +243,10 @@ func setUserIdInContextForRequestZero(r *http.Request) *http.Request {
 	r = r.WithContext(ctx)
 	return r
 }
-func redirectToSignIn(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/signin", http.StatusFound)
-}
+
+// func redirectToSignIn(w http.ResponseWriter, r *http.Request) {
+// 	http.Redirect(w, r, "/signin", http.StatusFound)
+// }
 
 func GoToPageOrRedirectToSignIn(isRedirect bool, next http.Handler, w http.ResponseWriter, r *http.Request) {
 	switch isRedirect {

@@ -29,6 +29,11 @@ func (service *GalleryService) GalleryDir(id int) string {
 	return filepath.Join(imagesDir, fmt.Sprintf("gallery-%d", id))
 }
 
+func (service *GalleryService) GetImageExtensions() []string {
+	return []string{
+		".png", ".gif", ".jpg", ".jpeg",
+	}
+}
 func (service *GalleryService) Create(title string, userId int) (*Gallery, error) {
 
 	gallery := Gallery{
