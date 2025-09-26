@@ -2,7 +2,11 @@ package views
 
 import (
 	"embed"
+	"encoding/json"
+	"fmt"
 	"html/template"
+
+	"github.com/sohWenMing/lenslocked/models"
 )
 
 // here i need something, which can be used to comstruct and pass out a views.Template struct
@@ -36,28 +40,95 @@ func (n *GalleryTemplateConstructor) ConstructTemplate(fs embed.FS, templateStri
 }
 
 type GalleryData struct {
+	UserId           int
+	GalleryId        int
+	OtherGalleryData any
+}
+
+func (g *GalleryData) String() string {
+	jsonBytes, _ := json.MarshalIndent(g, "", "    ")
+	return string(jsonBytes)
+}
+
+func InitNewGalleryData(userId int, loadValue string) GalleryData {
+	galleryData := GalleryData{
+		UserId:           userId,
+		GalleryId:        0,
+		OtherGalleryData: InitEditGalleryFunctionAndInputData(loadValue),
+	}
+	fmt.Println("TOREMOVE: galleryData: ", galleryData.String())
+	return galleryData
+}
+
+func InitViewGalleryData(userId int, galleryId int, galleryTitle string, exts []string) (GalleryData, error) {
+	filePaths, err := getImageFilePaths(galleryId, exts)
+	if err != nil {
+		return GalleryData{}, err
+	}
+	galleryData := GalleryData{
+		UserId:    userId,
+		GalleryId: galleryId,
+		OtherGalleryData: struct {
+			Title     string
+			ImageUrls []string
+		}{
+			galleryTitle,
+			filePaths,
+		},
+	}
+	return galleryData, nil
+}
+
+func InitEditGalleryData(userId int, galleryId int, loadTitleValue string, exts []string) (GalleryData, error) {
+	filePaths, err := getImageFilePaths(galleryId, exts)
+	if err != nil {
+		return GalleryData{}, err
+	}
+	galleryData :=
+		GalleryData{
+			UserId:    userId,
+			GalleryId: galleryId,
+			OtherGalleryData: struct {
+				ImageUrls []string
+				InputData GalleryFunctionToInputData
+			}{
+				filePaths,
+				InitEditGalleryFunctionAndInputData(loadTitleValue),
+			},
+		}
+	fmt.Println("TOREMOVE:  galleryData: ", galleryData.String())
+	return galleryData, nil
+}
+
+func getImageFilePaths(galleryId int, exts []string) ([]string, error) {
+	galleryImages, err := models.GetImagesByGalleryId(galleryId, exts)
+	if err != nil {
+		return []string{}, err
+	}
+	filePaths := make([]string, len(galleryImages))
+	for i, galleryImage := range galleryImages {
+		filePaths[i] = galleryImage.GetPath()
+	}
+	return filePaths, nil
+
+}
+
+type GalleryFunctionToInputData struct {
 	GalleryFunction string
 	TitleInput      inputHTMLAttribs
 }
 
-func InitNewGalleryData() GalleryData {
-	return GalleryData{
+func InitNewGalleryFunctionAndInputData() GalleryFunctionToInputData {
+	return GalleryFunctionToInputData{
 		"new",
 		setInputHTMLAttribs(setInputHTMlAttribsValues{"", false, true}),
 	}
 }
 
-func InitEditGalleryData(loadValue string) GalleryData {
-	return GalleryData{
+func InitEditGalleryFunctionAndInputData(loadValue string) GalleryFunctionToInputData {
+	return GalleryFunctionToInputData{
 		"edit",
 		setInputHTMLAttribs(setInputHTMlAttribsValues{loadValue, false, true}),
-	}
-}
-
-func InitViewGalleryData(loadValue string) GalleryData {
-	return GalleryData{
-		"view",
-		setInputHTMLAttribs(setInputHTMlAttribsValues{loadValue, true, false}),
 	}
 }
 

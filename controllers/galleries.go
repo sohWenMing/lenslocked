@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -85,35 +84,28 @@ func (g *Galleries) New(w http.ResponseWriter, r *http.Request) {
 	// need to get in the user context, after getting in the information, we want to always be able
 	csrfToken := GetCSRFTokenFromRequest(r)
 	userId, _ := GetUserIdFromRequestContext(r)
-	g.Templates.New.ExecTemplateWithCSRF(w, r, csrfToken, "new_gallery.gohtml", initNewGalleryData(userId), nil)
+	g.Templates.New.ExecTemplateWithCSRF(w, r, csrfToken, "new_gallery.gohtml", views.InitNewGalleryData(userId, ""), nil)
 }
 
+/*
+Create is the handler used when a user attempts to send a Post request to create a new gallery.
+If there is an error, will render the same create template that was initially loaded, but with the error
+else, will process request and then redirect to the edit page
+*/
 func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	csrfToken := GetCSRFTokenFromRequest(r)
 	userId, _ := GetUserIdFromRequestContext(r)
 	title := r.FormValue("title")
 	if title == "" {
-		g.Templates.New.ExecTemplateWithCSRF(w, r, csrfToken, "new_gallery.gohtml", initNewGalleryData(userId), []string{"mandatory inputs were not filled"})
+		g.Templates.New.ExecTemplateWithCSRF(w, r, csrfToken, "new_gallery.gohtml", views.InitNewGalleryData(userId, title), []string{"mandatory inputs were not filled"})
 		return
 	}
 	gallery, err := g.GalleryService.Create(title, userId)
 	if err != nil {
-		g.Templates.New.ExecTemplateWithCSRF(w, r, csrfToken, "new_gallery.gohtml", initNewGalleryData(userId), []string{err.Error()})
+		g.Templates.New.ExecTemplateWithCSRF(w, r, csrfToken, "new_gallery.gohtml", views.InitNewGalleryData(userId, title), []string{err.Error()})
 		return
 	}
 	http.Redirect(w, r, getEditPath(gallery.ID), http.StatusFound)
-}
-
-type NewGalleryData struct {
-	UserId         int
-	NewGalleryData views.GalleryData
-}
-
-func initNewGalleryData(userId int) NewGalleryData {
-	return NewGalleryData{
-		UserId:         userId,
-		NewGalleryData: views.InitNewGalleryData(),
-	}
 }
 
 func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
@@ -127,8 +119,15 @@ func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, 
 		userId, _ := GetUserIdFromRequestContext(r)
 		if userId != gallery.UserID {
 			http.Error(w, "User is not owner of gallery", http.StatusBadRequest)
+			return
 		}
-		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "edit_gallery.gohtml", initEditGalleryData(userId, gallery.ID, gallery.Title), nil)
+
+		galleryData, err := views.InitEditGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions())
+		if err != nil {
+			http.Error(w, "Internal SErver Error", http.StatusInternalServerError)
+			return
+		}
+		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "edit_gallery.gohtml", galleryData, nil)
 	}
 }
 func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +139,7 @@ func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, 
 			return
 		}
 		userId, _ := GetUserIdFromRequestContext(r)
-		galleryData, err := initViewGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions())
+		galleryData, err := views.InitViewGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions())
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
@@ -171,47 +170,6 @@ func ServeImage() http.Handler {
 				http.ServeFile(w, r, filePath)
 			}
 		})
-}
-
-type GalleryData struct {
-	UserId           int
-	GalleryId        int
-	OtherGalleryData any
-}
-
-func (g *GalleryData) String() string {
-	jsonBytes, _ := json.MarshalIndent(g, "", "")
-	return string(jsonBytes)
-}
-
-func initEditGalleryData(userId int, galleryId int, loadTitleValue string) GalleryData {
-	return GalleryData{
-		UserId:           userId,
-		GalleryId:        galleryId,
-		OtherGalleryData: views.InitEditGalleryData(loadTitleValue),
-	}
-}
-
-func initViewGalleryData(userId int, galleryId int, galleryTitle string, exts []string) (GalleryData, error) {
-	galleryImages, err := models.GetImagesByGalleryId(galleryId, exts)
-	if err != nil {
-		return GalleryData{}, err
-	}
-	filePaths := make([]string, len(galleryImages))
-	for i, galleryImage := range galleryImages {
-		filePaths[i] = galleryImage.GetPath()
-	}
-	return GalleryData{
-		UserId:    userId,
-		GalleryId: galleryId,
-		OtherGalleryData: struct {
-			Title     string
-			ImageUrls []string
-		}{
-			galleryTitle,
-			filePaths,
-		},
-	}, nil
 }
 
 func (g *Galleries) HandleEdit(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
@@ -272,9 +230,6 @@ func (g *Galleries) HandleDelete(gs *models.GalleryService) func(w http.Response
 		http.Redirect(w, r, "/galleries/list", http.StatusFound)
 	}
 }
-
-//we want to create a value that:
-// checks that the the user id, and title is submitted
 
 func getGalleryByRequestGalleryId(r *http.Request, galleryService *models.GalleryService) (gallery *models.Gallery, err error) {
 	galleryId, err := getGalleryIdFromRequest(r)

@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"slices"
 )
@@ -12,9 +13,9 @@ func LoadImageFileServer(path string) http.Handler {
 }
 
 type GalleryImage struct {
-	galleryId int
-	path      string
-	fileName  string
+	galleryId       int
+	path            string
+	fileNameEscaped string
 }
 
 func (g *GalleryImage) GetPath() string {
@@ -29,11 +30,11 @@ func GetImagesByGalleryId(galleryId int, exts []string) (galleryImages []*Galler
 	}
 	returnedGalleryImages := make([]*GalleryImage, len(filepaths))
 	for i, filePath := range filepaths {
-		fileName := filepath.Base(filePath)
+		fileNameEscaped := url.PathEscape(filepath.Base(filePath))
 		returnedGalleryImages[i] = &GalleryImage{
-			galleryId: galleryId,
-			path:      fmt.Sprintf("/galleries/%d/images/%s", galleryId, fileName),
-			fileName:  fileName,
+			galleryId:       galleryId,
+			path:            (fmt.Sprintf("/galleries/%d/images/%s", galleryId, fileNameEscaped)),
+			fileNameEscaped: fileNameEscaped,
 		}
 	}
 	return returnedGalleryImages, nil
