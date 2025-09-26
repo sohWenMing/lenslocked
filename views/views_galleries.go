@@ -40,9 +40,12 @@ func (n *GalleryTemplateConstructor) ConstructTemplate(fs embed.FS, templateStri
 }
 
 type GalleryData struct {
-	UserId           int
-	GalleryId        int
-	OtherGalleryData any
+	UserId    int
+	GalleryId int
+	Title     string
+	ImageUrls []string
+	IsEdit    bool
+	InputData GalleryFunctionToInputData
 }
 
 func (g *GalleryData) String() string {
@@ -52,9 +55,9 @@ func (g *GalleryData) String() string {
 
 func InitNewGalleryData(userId int, loadValue string) GalleryData {
 	galleryData := GalleryData{
-		UserId:           userId,
-		GalleryId:        0,
-		OtherGalleryData: InitEditGalleryFunctionAndInputData(loadValue),
+		UserId:    userId,
+		GalleryId: 0,
+		InputData: InitEditGalleryFunctionAndInputData(loadValue),
 	}
 	fmt.Println("TOREMOVE: galleryData: ", galleryData.String())
 	return galleryData
@@ -68,14 +71,12 @@ func InitViewGalleryData(userId int, galleryId int, galleryTitle string, exts []
 	galleryData := GalleryData{
 		UserId:    userId,
 		GalleryId: galleryId,
-		OtherGalleryData: struct {
-			Title     string
-			ImageUrls []string
-		}{
-			galleryTitle,
-			filePaths,
-		},
+		Title:     galleryTitle,
+		ImageUrls: filePaths,
+		IsEdit:    false,
+		InputData: GalleryFunctionToInputData{},
 	}
+	fmt.Println("TOREMOVE: galleryData: ", galleryData.String())
 	return galleryData, nil
 }
 
@@ -88,13 +89,10 @@ func InitEditGalleryData(userId int, galleryId int, loadTitleValue string, exts 
 		GalleryData{
 			UserId:    userId,
 			GalleryId: galleryId,
-			OtherGalleryData: struct {
-				ImageUrls []string
-				InputData GalleryFunctionToInputData
-			}{
-				filePaths,
-				InitEditGalleryFunctionAndInputData(loadTitleValue),
-			},
+			Title:     loadTitleValue,
+			ImageUrls: filePaths,
+			IsEdit:    true,
+			InputData: InitEditGalleryFunctionAndInputData(loadTitleValue),
 		}
 	fmt.Println("TOREMOVE:  galleryData: ", galleryData.String())
 	return galleryData, nil

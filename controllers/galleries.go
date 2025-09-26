@@ -111,17 +111,12 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		csrfToken := GetCSRFTokenFromRequest(r)
-		gallery, err := getGalleryByRequestGalleryId(r, gs)
+		userId, _ := GetUserIdFromRequestContext(r)
+		gallery, err := getValidatedUserGallery(r, gs, userId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		userId, _ := GetUserIdFromRequestContext(r)
-		if userId != gallery.UserID {
-			http.Error(w, "User is not owner of gallery", http.StatusBadRequest)
-			return
-		}
-
 		galleryData, err := views.InitEditGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions())
 		if err != nil {
 			http.Error(w, "Internal SErver Error", http.StatusInternalServerError)
@@ -129,6 +124,17 @@ func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, 
 		}
 		g.Templates.Edit.ExecTemplateWithCSRF(w, r, csrfToken, "edit_gallery.gohtml", galleryData, nil)
 	}
+}
+
+func getValidatedUserGallery(r *http.Request, gs *models.GalleryService, userId int) (gallery *models.Gallery, err error) {
+	gallery, err = getGalleryByRequestGalleryId(r, gs)
+	if err != nil {
+		return nil, err
+	}
+	if userId != gallery.UserID {
+		return nil, errors.New("user is not owner of gallery")
+	}
+	return gallery, nil
 }
 func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -140,11 +146,34 @@ func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, 
 		}
 		userId, _ := GetUserIdFromRequestContext(r)
 		galleryData, err := views.InitViewGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions())
+
+		fmt.Println("TOREMOVE: galleryData: ", galleryData.String())
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 		g.Templates.View.ExecTemplateWithCSRF(w, r, csrfToken, "view_gallery.gohtml", galleryData, nil)
+	}
+}
+
+func (g *Galleries) DeleteImage(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := chi.URLParam(r, "filename")
+		fmt.Println("filename: ", filename)
+		userId, _ := GetUserIdFromRequestContext(r)
+		gallery, err := getValidatedUserGallery(r, gs, userId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		evalpath := fmt.Sprintf("./images/%d/%s", gallery.ID, filename)
+		err = os.Remove(evalpath)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error occured when trying to delete: %s", err.Error()), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, fmt.Sprintf("/galleries/%d/edit", gallery.ID), http.StatusFound)
+
 	}
 }
 

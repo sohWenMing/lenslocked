@@ -7,7 +7,7 @@
         <form action="/galleries/edit" method="post">
             {{ csrfField }}
             <input type="hidden" name="gallery-id" value="{{ .GalleryId }}">
-            {{ template "input" .OtherGalleryData.InputData.TitleInput}}
+            {{ template "input" .InputData.TitleInput}}
         <div class="flex space-x-2">
             <div class="py-4">
                 <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">
@@ -24,7 +24,7 @@
             </div>
         </form>
         </div>
-        {{ template "gallery" .OtherGalleryData}}
+        {{ template "gallery" .}}
 </div>
 
 {{ template "footer"}}

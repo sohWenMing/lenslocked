@@ -6,7 +6,7 @@
     </h1>
     <form action="/galleries/new" method="post">
         {{ csrfField }}
-        {{ template "input" .OtherGalleryData.TitleInput}}
+        {{ template "input" .InputData.TitleInput}}
         <div class="py-4">
             <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">
             Create

@@ -117,6 +117,7 @@ func main() {
 			sr.Use(userContext.SetUserMW())
 			sr.Get("/{id}", galleries.View(dbc.GalleryService))
 			sr.Handle("/{id}/images/{filename}", controllers.ServeImage())
+			sr.Post("/{id}/images/{filename}/delete", galleries.DeleteImage(dbc.GalleryService))
 		})
 		sr.Group(func(sr chi.Router) {
 			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))

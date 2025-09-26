@@ -130,16 +130,24 @@
 <p>{{ .Email }}</p>
 {{ end }}
 
-
-
 {{ define "gallery" }}
     <div class="columns-4 gap-4 space-y-4">
     {{ range .ImageUrls }}
-        <div class="h-min w-full">
+        <div class="h-min w-full relative">
             <a href="{{.}}">
             <img class="w-full" src="{{.}}">
             </a>
+        {{if $.IsEdit }} 
+            {{ template "delete-image-form" .}}
+        {{ end }}
         </div>
     {{ end }}
 </div>
 {{ end }}
+
+{{ define "delete-image-form" }}
+<form action="{{.}}/delete" method="post" onsubmit="return confirm('Do you really want to delete this image?');">
+    {{ csrfField }}
+    <button type=submit class="absolute top-0 right-0 bg-red-400">Delete</button>
+</form>
+{{ end}}
