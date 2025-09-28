@@ -150,6 +150,11 @@ func (g *Galleries) UploadImage(gs *models.GalleryService) func(w http.ResponseW
 				return
 			}
 			defer file.Close()
+			err = models.ValidateContentType(file, g.GalleryService.GetAllowableContentTypes())
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			err = gs.CreateImage(gallery.ID, fileHeader.Filename, file)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -2,10 +2,14 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 )
 
 // Gallery houses fields that map to database structure that defines a gallery
@@ -40,6 +44,34 @@ func (service *GalleryService) CreateImage(galleryId int, filename string, conte
 	return nil
 }
 
+func ValidateContentType(r io.ReadSeeker, exts []string) error {
+	bytesToValidate, err := get512Bytes(r)
+	if err != nil {
+		return err
+	}
+	contentType := http.DetectContentType(bytesToValidate)
+	if !slices.Contains(exts, strings.ToLower(strings.TrimSpace(contentType))) {
+		return errors.New("fileType not allowed")
+	}
+	return nil
+
+}
+
+func get512Bytes(r io.ReadSeeker) (bytesToValidate []byte, err error) {
+	bytes := make([]byte, 512)
+	_, err = r.Read(bytes)
+	if err != nil {
+		return []byte{}, nil
+	}
+	_, err = r.Seek(0, 0)
+	if err != nil {
+		return []byte{}, nil
+	}
+	return bytes, nil
+}
+
+// what i want is to get access to 512 bytes, for every file that I am trying ot read
+// I also need to be able to reset the reading of the file, using seek
 // Creates a new gallery based on input title and userId. Returns pointer to a Gallery struct if successful, else
 // returns nil and error
 func (service *GalleryService) GalleryDir(id int) string {
@@ -48,6 +80,15 @@ func (service *GalleryService) GalleryDir(id int) string {
 		imagesDir = "images"
 	}
 	return filepath.Join(imagesDir, fmt.Sprintf("%d", id))
+}
+
+func (service *GalleryService) GetAllowableContentTypes() []string {
+	return []string{
+		"image/jpeg",
+		"image/jpg",
+		"image/gif",
+		"image/png",
+	}
 }
 
 func (service *GalleryService) GetImageExtensions() []string {

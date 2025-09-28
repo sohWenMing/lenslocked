@@ -94,7 +94,6 @@ func InitEditGalleryData(userId int, galleryId int, loadTitleValue string, exts 
 			IsEdit:    true,
 			InputData: InitEditGalleryFunctionAndInputData(loadTitleValue),
 		}
-	fmt.Println("TOREMOVE:  galleryData: ", galleryData.String())
 	return galleryData, nil
 }
 
