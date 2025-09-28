@@ -11,11 +11,11 @@
         <div class="flex space-x-2">
             <div class="py-4">
                 <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">
-                Update Gallery
+                Update Title
             </button>
             </div>
         </form>
-        <form action="/galleries/{{ .GalleryId }}/delete" method="post">
+        <form action="/galleries/{{ .GalleryId }}/delete" method="post" onsubmit="return confirm('Are you sure you want to delete this gallery? This cannot be undone');">
             {{ csrfField }}
             <div class="py-4">
                 <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">
@@ -24,7 +24,27 @@
             </div>
         </form>
         </div>
+        <div class="py-2">        
+            <div class="py-2">
+                {{ template "file-input-form" . }}
+            </div>
+            <p>Please only upload jpg, png, and gif files.</p>
+        </div>
+
         {{ template "gallery" .}}
 </div>
 
 {{ template "footer"}}
+
+
+{{ define "file-input-form"}}
+<form action="/galleries/{{ .GalleryId }}/images" method="post" enctype="multipart/form-data">
+    {{ csrfField }}
+    <input type="file" accept="image/png, image/jpeg, image/gif, image/jpg" id="images" name="images" multiple>
+    <div class="py-2">
+    <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white text-large font-bold rounded">Upload</button>
+    </div>
+</form>
+{{ end }}
+
+

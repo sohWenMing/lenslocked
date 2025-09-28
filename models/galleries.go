@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 )
 
@@ -19,6 +21,25 @@ type GalleryService struct {
 	ImagesDir string
 }
 
+func (service *GalleryService) CreateImage(galleryId int, filename string, contents io.Reader) error {
+	galleryDir := service.GalleryDir(galleryId)
+	err := os.MkdirAll(galleryDir, 0755)
+	if err != nil {
+		return fmt.Errorf("creating gallery-%d images directory: %w", galleryId, err)
+	}
+	imagePath := filepath.Join(galleryDir, filename)
+	dst, err := os.Create(imagePath)
+	if err != nil {
+		return fmt.Errorf("creating image file: %w", err)
+	}
+	defer dst.Close()
+	_, err = io.Copy(dst, contents)
+	if err != nil {
+		return fmt.Errorf("copying contents to image: %w", err)
+	}
+	return nil
+}
+
 // Creates a new gallery based on input title and userId. Returns pointer to a Gallery struct if successful, else
 // returns nil and error
 func (service *GalleryService) GalleryDir(id int) string {
@@ -26,7 +47,7 @@ func (service *GalleryService) GalleryDir(id int) string {
 	if imagesDir == "" {
 		imagesDir = "images"
 	}
-	return filepath.Join(imagesDir, fmt.Sprintf("gallery-%d", id))
+	return filepath.Join(imagesDir, fmt.Sprintf("%d", id))
 }
 
 func (service *GalleryService) GetImageExtensions() []string {

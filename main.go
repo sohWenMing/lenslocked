@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sohWenMing/lenslocked/controllers"
 	"github.com/sohWenMing/lenslocked/gomailer"
 	"github.com/sohWenMing/lenslocked/models"
@@ -117,9 +118,9 @@ func main() {
 			sr.Use(userContext.SetUserMW())
 			sr.Get("/{id}", galleries.View(dbc.GalleryService))
 			sr.Handle("/{id}/images/{filename}", controllers.ServeImage())
-			sr.Post("/{id}/images/{filename}/delete", galleries.DeleteImage(dbc.GalleryService))
 		})
 		sr.Group(func(sr chi.Router) {
+			sr.Use(middleware.Logger)
 			sr.Use(controllers.CookieAuthMiddleWare(dbc.SessionService, nil, true, false))
 			sr.Use(userContext.SetUserMW())
 			sr.Get("/new_gallery", galleries.New)
@@ -128,6 +129,8 @@ func main() {
 			sr.Post("/new", galleries.Create)
 			sr.Post("/edit", galleries.HandleEdit(dbc.GalleryService))
 			sr.Post("/{id}/delete", galleries.HandleDelete(dbc.GalleryService))
+			sr.Post("/{id}/images/{filename}/delete", galleries.DeleteImage(dbc.GalleryService))
+			sr.Post("/{id}/images", galleries.UploadImage(dbc.GalleryService))
 		})
 	})
 

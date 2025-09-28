@@ -126,6 +126,44 @@ func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, 
 	}
 }
 
+func (g *Galleries) UploadImage(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("TODO: remove print statement: Mananged to reach the gallery handler")
+		userId, _ := GetUserIdFromRequestContext(r)
+		gallery, err := getValidatedUserGallery(r, gs, userId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		fmt.Println("TODO: remove Gallery: ", gallery)
+		err = r.ParseMultipartForm(5 << 20)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fileHeaders := r.MultipartForm.File["images"]
+		for _, fileHeader := range fileHeaders {
+			file, err := fileHeader.Open()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer file.Close()
+			err = gs.CreateImage(gallery.ID, fileHeader.Filename, file)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			redirectPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
+			http.Redirect(w, r, redirectPath, http.StatusFound)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Managed to reach the gallery handler"))
+	}
+}
+
 func getValidatedUserGallery(r *http.Request, gs *models.GalleryService, userId int) (gallery *models.Gallery, err error) {
 	gallery, err = getGalleryByRequestGalleryId(r, gs)
 	if err != nil {
