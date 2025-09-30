@@ -19,6 +19,37 @@ type EmailEnvs struct {
 	Password string
 }
 
+func (e *Envs) LoadPgConfig() (config pgConfig, err error) {
+	config = pgConfig{}
+	dbHost, err := e.GetDBHost()
+	if err != nil {
+		return config, err
+	}
+	port, err := e.GetDBPort()
+	if err != nil {
+		return config, err
+	}
+	user, err := e.GetDBUser()
+	if err != nil {
+		return config, err
+	}
+	dbPassword, err := e.GetDBPassword()
+	if err != nil {
+		return config, err
+	}
+	dbName, err := e.GetDBName()
+	if err != nil {
+		return config, err
+	}
+	sslMode, err := e.GetDBSSLMode()
+	if err != nil {
+		return config, err
+	}
+	return pgConfig{
+		dbHost, port, user, dbPassword, dbName, sslMode,
+	}, nil
+}
+
 func (e *Envs) LoadEmailEnvs() (emailEnvs *EmailEnvs, err error) {
 	emailHost, err := e.GetEmailHost()
 	if err != nil {
@@ -53,7 +84,7 @@ func (e *Envs) GetIsDev() (bool, error) {
 }
 
 func (e *Envs) GetCSRFSecretKey() (string, error) {
-	csrfKey, err := getEnvVar("SECRETKEY")
+	csrfKey, err := getEnvVar("CSRFSECRETKEY")
 	if err != nil {
 		return "", err
 	}
@@ -86,6 +117,53 @@ func (e *Envs) GetEmailUsername() (string, error) {
 		return "", err
 	}
 	return password, nil
+}
+func (e *Envs) GetDBHost() (string, error) {
+	dbHost, err := getEnvVar("DBHOST")
+	if err != nil {
+		return "", err
+	}
+	return dbHost, nil
+}
+
+func (e *Envs) GetDBPort() (string, error) {
+	dbPort, err := getEnvVar("DBPORT")
+	if err != nil {
+		return "", err
+	}
+	_, err = strconv.Atoi(dbPort)
+	if err != nil {
+		return "", errors.New("dbPort could not be converted to numerical value")
+	}
+	return dbPort, nil
+}
+func (e *Envs) GetDBUser() (string, error) {
+	dbHost, err := getEnvVar("DBUSER")
+	if err != nil {
+		return "", err
+	}
+	return dbHost, nil
+}
+func (e *Envs) GetDBPassword() (string, error) {
+	dbPassword, err := getEnvVar("DBPASSWORD")
+	if err != nil {
+		return "", err
+	}
+	return dbPassword, nil
+}
+func (e *Envs) GetDBName() (string, error) {
+	dbName, err := getEnvVar("DBNAME")
+	if err != nil {
+		return "", err
+	}
+	return dbName, nil
+}
+func (e *Envs) GetDBSSLMode() (string, error) {
+	sslMode, err := getEnvVar("DBSSLMODE")
+	if err != nil {
+		return "", err
+	}
+	return sslMode, nil
 }
 func (e *Envs) GetEmailPort() (int, error) {
 	port, err := getEmailPort()

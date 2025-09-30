@@ -128,14 +128,12 @@ func (g *Galleries) Edit(gs *models.GalleryService) func(w http.ResponseWriter, 
 
 func (g *Galleries) UploadImage(gs *models.GalleryService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("TODO: remove print statement: Mananged to reach the gallery handler")
 		userId, _ := GetUserIdFromRequestContext(r)
 		gallery, err := getValidatedUserGallery(r, gs, userId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		fmt.Println("TODO: remove Gallery: ", gallery)
 		err = r.ParseMultipartForm(5 << 20)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -190,7 +188,6 @@ func (g *Galleries) View(gs *models.GalleryService) func(w http.ResponseWriter, 
 		userId, _ := GetUserIdFromRequestContext(r)
 		galleryData, err := views.InitViewGalleryData(userId, gallery.ID, gallery.Title, g.GalleryService.GetImageExtensions())
 
-		fmt.Println("TOREMOVE: galleryData: ", galleryData.String())
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return

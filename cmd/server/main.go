@@ -30,7 +30,12 @@ func main() {
 	setCSRFSecretKey(envVars)
 	setBaseUrl(envVars)
 
-	dbc, err := models.InitDBConnections()
+	pgConfig, err := envVars.LoadPgConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	dbc, err := models.InitDBConnections(pgConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

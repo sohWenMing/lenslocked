@@ -26,8 +26,10 @@ func (p pgConfig) String() string {
 		p.host, p.port, p.user, p.password, p.dbname, p.sslmode,
 	)
 }
+func (p pgConfig) DBInterface() {
+}
 
-func defaultConfig() pgConfig {
+func DefaultConfig() pgConfig {
 	return pgConfig{
 		"localhost",
 		"5432",
@@ -38,11 +40,16 @@ func defaultConfig() pgConfig {
 	}
 }
 
-func InitDBConnections() (dbc *DBConnections, err error) {
-	fmt.Println("default pg connection string: ", defaultConfig().String())
+type DBConfig interface {
+	String() string
+	DBInterface()
+}
+
+func InitDBConnections(config DBConfig) (dbc *DBConnections, err error) {
+	fmt.Println("eval connection string: ", config.String())
 	db, err := sql.Open(
 		"pgx",
-		defaultConfig().String(),
+		config.String(),
 	)
 	if err != nil {
 		return nil, err

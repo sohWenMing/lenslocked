@@ -3,7 +3,6 @@ package views
 import (
 	"embed"
 	"encoding/json"
-	"fmt"
 	"html/template"
 
 	"github.com/sohWenMing/lenslocked/models"
@@ -59,7 +58,6 @@ func InitNewGalleryData(userId int, loadValue string) GalleryData {
 		GalleryId: 0,
 		InputData: InitEditGalleryFunctionAndInputData(loadValue),
 	}
-	fmt.Println("TOREMOVE: galleryData: ", galleryData.String())
 	return galleryData
 }
 
@@ -76,7 +74,6 @@ func InitViewGalleryData(userId int, galleryId int, galleryTitle string, exts []
 		IsEdit:    false,
 		InputData: GalleryFunctionToInputData{},
 	}
-	fmt.Println("TOREMOVE: galleryData: ", galleryData.String())
 	return galleryData, nil
 }
 

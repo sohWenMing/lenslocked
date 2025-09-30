@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	isDev = envIsDev
-	databaseConnection, err := models.InitDBConnections()
+	databaseConnection, err := models.InitDBConnections(models.DefaultConfig())
 	if err != nil {
 		fmt.Println("error occured during initialisation of db connection during test")
 		os.Exit(1)
