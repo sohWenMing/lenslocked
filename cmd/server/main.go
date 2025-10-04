@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -15,34 +14,72 @@ import (
 	"github.com/sohWenMing/lenslocked/views"
 )
 
-var isDev bool
-var baseUrl string
-var csrfSecretKey string
+type config struct {
+	isDev         bool
+	baseUrl       string
+	csrfSecretKey string
+	emailEnvVars  *models.EmailEnvs
+	pgConfig      models.PgConfig
+}
+
+func loadEnvConfig() (*config, error) {
+	envVars, err := loadEnvVars()
+	if err != nil {
+		return nil, err
+	}
+	isDev, err := readIsDev(envVars)
+	if err != nil {
+		return nil, err
+	}
+	baseUrl, err := readBaseUrl(envVars)
+	if err != nil {
+		return nil, err
+	}
+	csrfSecretKey, err := readCSRFSecretKey(envVars)
+	if err != nil {
+		return nil, err
+	}
+	emailEnvVars, err := getEmailEnvVars(envVars)
+	if err != nil {
+		return nil, err
+	}
+	pgConfig, err := envVars.LoadPgConfig()
+	if err != nil {
+		return nil, err
+	}
+	return &config{
+		isDev, baseUrl, csrfSecretKey, emailEnvVars, pgConfig,
+	}, nil
+}
 
 func main() {
-	envVars := loadEnvVars()
-
-	emailEnvVars := getEmailEnvVars(envVars)
-	initGoMailer := gomailer.NewGoMailer(emailEnvVars.Host, emailEnvVars.Username, emailEnvVars.Password, emailEnvVars.Port)
-	emailService := services.InitEmailService(initGoMailer, services.LoadEmailTemplates())
-
-	setIsDev(envVars)
-	setCSRFSecretKey(envVars)
-	setBaseUrl(envVars)
-
-	pgConfig, err := envVars.LoadPgConfig()
+	cfg, err := loadEnvConfig()
 	if err != nil {
 		panic(err)
 	}
-
-	dbc, err := models.InitDBConnections(pgConfig)
+	err = run(cfg)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+}
+
+func run(cfg *config) error {
+
+	initGoMailer := gomailer.NewGoMailer(
+		cfg.emailEnvVars.Host,
+		cfg.emailEnvVars.Username,
+		cfg.emailEnvVars.Password,
+		cfg.emailEnvVars.Port)
+
+	emailService := services.InitEmailService(initGoMailer, services.LoadEmailTemplates())
+
+	dbc, err := models.InitDBConnections(cfg.pgConfig)
+	if err != nil {
+		return err
 	}
 	err = models.Migrate(dbc.DB, ".", migrations.GetMigrations())
-	fmt.Println("running migrations on startup")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	fmt.Println("Migrations successfully ran")
 
@@ -103,7 +140,7 @@ func main() {
 		sr.Post("/signup", controllers.HandleSignupForm(dbc, render))
 		sr.Post("/signin", controllers.HandleSignInForm(dbc, render))
 		sr.Post("/signout", controllers.HandlerSignOut(dbc.SessionService, nil))
-		sr.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, baseUrl, emailService, render))
+		sr.Post("/reset_password", controllers.HandleForgotPasswordForm(dbc, cfg.baseUrl, emailService, render))
 		sr.Post("/reset_password_submit", controllers.HandlerResetPasswordForm(dbc, render))
 	})
 
@@ -145,48 +182,48 @@ func main() {
 	// ##### Not Found Handler #####
 	r.NotFound(controllers.ErrNotFoundHandler)
 
-	CSRFMw := controllers.CSRFProtect(isDev, csrfSecretKey)
+	CSRFMw := controllers.CSRFProtect(cfg.isDev, cfg.csrfSecretKey)
 
 	fmt.Println("Starting the server on :3000...")
-	log.Fatal(http.ListenAndServe(":3000", CSRFMw(r)))
+	return (http.ListenAndServe(":3000", CSRFMw(r)))
 }
 
-func setBaseUrl(envVars *models.Envs) {
+func readBaseUrl(envVars *models.Envs) (string, error) {
 	envBaseUrl, err := envVars.GetBaseURL()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	baseUrl = envBaseUrl
+	return envBaseUrl, nil
 }
 
-func setCSRFSecretKey(envVars *models.Envs) {
+func readCSRFSecretKey(envVars *models.Envs) (string, error) {
 	envcsrfSecretKey, err := envVars.GetCSRFSecretKey()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	csrfSecretKey = envcsrfSecretKey
+	return envcsrfSecretKey, nil
 }
 
-func setIsDev(envVars *models.Envs) {
+func readIsDev(envVars *models.Envs) (bool, error) {
 	envIsDev, err := envVars.GetIsDev()
 	if err != nil {
-		log.Fatal(err)
+		return false, err
 	}
-	isDev = envIsDev
+	return envIsDev, nil
 }
 
-func getEmailEnvVars(envVars *models.Envs) *models.EmailEnvs {
+func getEmailEnvVars(envVars *models.Envs) (*models.EmailEnvs, error) {
 	emailEnvs, err := envVars.LoadEmailEnvs()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return emailEnvs
+	return emailEnvs, nil
 }
 
-func loadEnvVars() *models.Envs {
+func loadEnvVars() (*models.Envs, error) {
 	envVars, err := models.LoadEnv(".env")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return envVars
+	return envVars, nil
 }

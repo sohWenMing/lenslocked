@@ -17,20 +17,20 @@ type DBConnections struct {
 	DB              *sql.DB
 }
 
-type pgConfig struct {
+type PgConfig struct {
 	host, port, user, password, dbname, sslmode string
 }
 
-func (p pgConfig) String() string {
+func (p PgConfig) String() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		p.host, p.port, p.user, p.password, p.dbname, p.sslmode,
 	)
 }
-func (p pgConfig) DBInterface() {
+func (p PgConfig) DBInterface() {
 }
 
-func DefaultConfig() pgConfig {
-	return pgConfig{
+func DefaultConfig() PgConfig {
+	return PgConfig{
 		"localhost",
 		"5432",
 		"baloo",

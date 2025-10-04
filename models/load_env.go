@@ -19,8 +19,8 @@ type EmailEnvs struct {
 	Password string
 }
 
-func (e *Envs) LoadPgConfig() (config pgConfig, err error) {
-	config = pgConfig{}
+func (e *Envs) LoadPgConfig() (config PgConfig, err error) {
+	config = PgConfig{}
 	dbHost, err := e.GetDBHost()
 	if err != nil {
 		return config, err
@@ -45,7 +45,7 @@ func (e *Envs) LoadPgConfig() (config pgConfig, err error) {
 	if err != nil {
 		return config, err
 	}
-	return pgConfig{
+	return PgConfig{
 		dbHost, port, user, dbPassword, dbName, sslMode,
 	}, nil
 }
