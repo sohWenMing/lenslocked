@@ -1,5 +1,7 @@
 ## Helpful Commands
 
+Here we're doing a slight change just to see what happens
+
 **docker compose exec -it db psql -U baloo -d lenslocked**
 
 ```
