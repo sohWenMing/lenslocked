@@ -1,5 +1,6 @@
-# TODO: Replace this with a domain before deploying.
-
-:80
-
-reverse_proxy server:3000
+:80 {
+  reverse_proxy server:3000 {
+    header_upstream Host {host}
+    header_upstream X-Forwarded-Host {host}
+  }
+}
