@@ -1,6 +1,11 @@
 version: "3.9"
 
 services:
+  db:
+    volumes:
+      - ~/data/lenslocked/psql:/var/lib/postgresql/data/pgdata
+      # mounts a volume defined in ~/data/lenslocked/psql in the usually defined space for a volume
+      # within the docker container in production
   caddy:
     image: caddy
     restart: always
