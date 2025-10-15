@@ -55,9 +55,9 @@ func (mwr *CookieAuthMWResult) SetUserIdFromSession(userId int) {
 }
 
 func CSRFProtect(isDev bool, secretKey string) func(http.Handler) http.Handler {
-	isSetSecure := !isDev
+	// isSetSecure := !isDev
 	return csrf.Protect([]byte(secretKey),
-		csrf.Secure(isSetSecure),
+		csrf.Secure(false),
 		csrf.TrustedOrigins([]string{
 			"localhost:3000",
 			"167.172.78.219:80",
