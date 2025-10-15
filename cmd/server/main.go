@@ -220,6 +220,10 @@ func getEmailEnvVars(envVars *models.Envs) (*models.EmailEnvs, error) {
 	return emailEnvs, nil
 }
 
+/*
+if no error occurs, returns a pointer to *models.Env, which has attached methods for loading environment
+variables from the env file
+*/
 func loadEnvVars() (*models.Envs, error) {
 	envVars, err := models.LoadEnv(".env")
 	if err != nil {
