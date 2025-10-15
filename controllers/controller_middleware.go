@@ -61,6 +61,8 @@ func CSRFProtect(isDev bool, secretKey string) func(http.Handler) http.Handler {
 		csrf.TrustedOrigins([]string{
 			"localhost:3000",
 			"167.172.78.219:80",
+			"http://167.172.78.219",
+			"http://167.172.78.219:80",
 		},
 		),
 		csrf.Path("/"),
